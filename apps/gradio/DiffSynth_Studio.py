@@ -249,4 +249,4 @@ with gr.Blocks() as app:
                         h, w = canvas["background"].shape[:2]
                         canvas["background"] = output_image.resize((w, h))
                     return tuple(canvas_list)
-app.launch()
+app.launch(server_name="0.0.0.0")
