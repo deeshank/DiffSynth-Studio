@@ -53,7 +53,7 @@ def image_to_bytes(image):
     return img_byte.getvalue()
 
 
-def generate_images(pipeline, prompt, negative_prompt, width, height, num_images, steps, cfg_scale, seed, use_fixed_seed):
+def generate_images(pipeline, prompt, negative_prompt, width, height, num_images, steps, cfg_scale, seed, use_fixed_seed, input_image=None, denoising_strength=0.75):
     """Generate images with the given parameters"""
     images = []
     progress_container = st.empty()
@@ -68,7 +68,13 @@ def generate_images(pipeline, prompt, negative_prompt, width, height, num_images
         # Update progress
         with progress_container:
             progress_val = (i) / num_images
-            st.progress(progress_val, text=f"🎨 Generating image {i+1}/{num_images}...")
+            mode = "Transforming" if input_image else "Generating"
+            st.progress(progress_val, text=f"🎨 {mode} image {i+1}/{num_images}...")
+        
+        # Prepare input image if provided
+        processed_input = None
+        if input_image is not None:
+            processed_input = input_image.resize((width, height))
         
         # Generate image
         image = pipeline(
@@ -77,7 +83,9 @@ def generate_images(pipeline, prompt, negative_prompt, width, height, num_images
             cfg_scale=cfg_scale,
             num_inference_steps=steps,
             height=height,
-            width=width
+            width=width,
+            input_image=processed_input,
+            denoising_strength=denoising_strength if processed_input else 1.0
         )
         images.append(image)
     
@@ -237,8 +245,48 @@ col_settings, col_output = st.columns([1, 2], gap="large")
 with col_settings:
     st.markdown("### ⚙️ Generation Settings")
     
+    # Mode selection
+    mode_tab1, mode_tab2 = st.tabs(["📝 Text to Image", "🖼️ Image to Image"])
+    
+    with mode_tab1:
+        generation_mode = "text2img"
+        st.caption("Generate images from text descriptions")
+    
+    with mode_tab2:
+        generation_mode = "img2img"
+        st.caption("Transform existing images with AI")
+    
+    # Image upload for img2img mode
+    input_image = None
+    denoising_strength = 0.75
+    
+    if generation_mode == "img2img":
+        with st.container():
+            st.markdown("**📤 Upload Image**")
+            uploaded_file = st.file_uploader(
+                "Choose an image to transform",
+                type=["png", "jpg", "jpeg"],
+                key="image_upload",
+                label_visibility="collapsed"
+            )
+            
+            if uploaded_file is not None:
+                input_image = Image.open(uploaded_file).convert("RGB")
+                st.image(input_image, caption="Input Image", use_container_width=True)
+                
+                denoising_strength = st.slider(
+                    "🎨 Transformation Strength",
+                    min_value=0.0,
+                    max_value=1.0,
+                    value=0.75,
+                    step=0.05,
+                    help="Higher = more changes, Lower = closer to original",
+                    key="denoising_slider"
+                )
+                st.caption(f"{'🔥 Heavy transformation' if denoising_strength > 0.7 else '✨ Light touch' if denoising_strength < 0.4 else '⚖️ Balanced'}")
+    
     # Quick presets
-    with st.expander("⚡ Quick Start Presets", expanded=True):
+    with st.expander("⚡ Quick Start Presets", expanded=generation_mode == "text2img"):
         preset_choice = st.selectbox(
             "Choose a preset or write your own",
             options=["Custom"] + list(PRESET_PROMPTS.keys()),
@@ -378,16 +426,23 @@ with col_settings:
     
     # Generate button
     st.markdown("<br>", unsafe_allow_html=True)
+    
+    # Check if ready to generate
+    can_generate = prompt.strip() and (generation_mode == "text2img" or (generation_mode == "img2img" and input_image is not None))
+    
+    button_text = "🎨 Transform Image" if generation_mode == "img2img" else "🚀 Generate Images"
     generate_btn = st.button(
-        "🚀 Generate Images",
+        button_text,
         type="primary",
         use_container_width=True,
-        disabled=not prompt.strip(),
+        disabled=not can_generate,
         key="generate_button"
     )
     
     if not prompt.strip():
         st.warning("⚠️ Please enter a prompt", icon="⚠️")
+    elif generation_mode == "img2img" and input_image is None:
+        st.warning("⚠️ Please upload an image", icon="⚠️")
     
     # Quick actions
     col1, col2 = st.columns(2)
@@ -407,7 +462,7 @@ with col_settings:
 with col_output:
     st.markdown("### 🖼️ Generated Images")
     
-    if generate_btn and prompt.strip():
+    if generate_btn and can_generate:
         # Generate images
         start_time = time.time()
         
@@ -421,7 +476,9 @@ with col_output:
             steps=steps,
             cfg_scale=cfg_scale,
             seed=seed,
-            use_fixed_seed=use_fixed_seed
+            use_fixed_seed=use_fixed_seed,
+            input_image=input_image,
+            denoising_strength=denoising_strength
         )
         
         generation_time = time.time() - start_time
@@ -435,11 +492,14 @@ with col_output:
             "steps": steps,
             "cfg_scale": cfg_scale,
             "seed": seed if use_fixed_seed else "Random",
-            "time": generation_time
+            "time": generation_time,
+            "mode": "Image-to-Image" if input_image else "Text-to-Image",
+            "denoising": f"{denoising_strength:.2f}" if input_image else "N/A"
         }
         
         st.balloons()
-        st.success(f"✨ Generated {len(images)} image(s) in {generation_time:.1f}s!", icon="✨")
+        mode_text = "Transformed" if input_image else "Generated"
+        st.success(f"✨ {mode_text} {len(images)} image(s) in {generation_time:.1f}s!", icon="✨")
         st.rerun()
     
     # Display images
@@ -449,7 +509,7 @@ with col_output:
         
         # Show generation info
         with st.expander("ℹ️ Generation Details", expanded=False):
-            col1, col2, col3 = st.columns(3)
+            col1, col2, col3, col4 = st.columns(4)
             with col1:
                 st.metric("📐 Size", params.get('size', 'N/A'))
                 st.metric("⚡ Steps", params.get('steps', 'N/A'))
@@ -459,6 +519,10 @@ with col_output:
             with col3:
                 st.metric("🖼️ Images", len(images))
                 st.metric("⏱️ Time", f"{params.get('time', 0):.1f}s")
+            with col4:
+                st.metric("🎨 Mode", params.get('mode', 'N/A'))
+                if params.get('denoising', 'N/A') != 'N/A':
+                    st.metric("🔥 Strength", params.get('denoising', 'N/A'))
             
             st.markdown("**📝 Prompt:**")
             st.caption(params.get('prompt', 'N/A'))
