@@ -4,7 +4,7 @@ echo "=================================="
 echo "Testing DiffSynth Studio API"
 echo "=================================="
 
-API_URL="http://localhost:8000"
+API_URL="http://0.0.0.0:8000"
 
 echo ""
 echo "1. Testing Health Check..."

@@ -10,7 +10,7 @@ cd /workspace/DiffSynth-Studio
 
 echo ""
 echo "Starting FastAPI on port 8000..."
-echo "API Docs: http://localhost:8000/docs"
+echo "API Docs: http://0.0.0.0:8000/docs"
 echo ""
 echo "Press Ctrl+C to stop"
 echo ""

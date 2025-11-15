@@ -39,10 +39,10 @@ This will:
 4. Start all services (FastAPI, React, Streamlit)
 
 ### Access Points
-- **React Web App**: http://localhost:3000 (Modern UI)
-- **FastAPI Backend**: http://localhost:8000
-- **API Documentation**: http://localhost:8000/docs
-- **Streamlit**: http://localhost:8501 (Legacy UI)
+- **React Web App**: http://0.0.0.0:3000 (Modern UI)
+- **FastAPI Backend**: http://0.0.0.0:8000
+- **API Documentation**: http://0.0.0.0:8000/docs
+- **Streamlit**: http://0.0.0.0:8501 (Legacy UI)
 
 ## 📁 Project Structure
 
@@ -103,7 +103,7 @@ DiffSynth-Studio/
 
 ### Example Request
 ```bash
-curl -X POST "http://localhost:8000/api/sdxl/generate" \
+curl -X POST "http://0.0.0.0:8000/api/sdxl/generate" \
   -H "Content-Type: application/json" \
   -d '{
     "prompt": "a beautiful sunset over mountains",
