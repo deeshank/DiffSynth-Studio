@@ -51,3 +51,26 @@ async def list_models():
             }
         ]
     }
+
+@router.post("/clear-cache")
+async def clear_model_cache():
+    """Clear all cached models to free VRAM"""
+    import gc
+    
+    # Import the cache from both modules
+    from apps.api.routes import sdxl, flux
+    
+    print("Clearing all model caches...")
+    sdxl._model_cache.clear()
+    flux._model_cache.clear()
+    
+    gc.collect()
+    torch.cuda.empty_cache()
+    torch.cuda.synchronize()
+    torch.cuda.reset_peak_memory_stats()
+    
+    return {
+        "status": "success",
+        "message": "All model caches cleared",
+        "vram_freed": True
+    }

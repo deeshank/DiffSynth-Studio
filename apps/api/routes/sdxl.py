@@ -42,12 +42,16 @@ class ImageResponse(BaseModel):
 def get_pipeline():
     """Get or create SDXL pipeline (cached)"""
     if "sdxl_pipeline" not in _model_cache:
-        # Unload FLUX if loaded to free VRAM
-        if "flux_pipeline" in _model_cache:
-            print("Unloading FLUX to free VRAM for SDXL...")
-            del _model_cache["flux_pipeline"]
-            torch.cuda.empty_cache()
-            torch.cuda.synchronize()
+        # Force clear all cached models
+        print("Clearing all cached models...")
+        _model_cache.clear()
+        
+        # Aggressive VRAM cleanup
+        import gc
+        gc.collect()
+        torch.cuda.empty_cache()
+        torch.cuda.synchronize()
+        torch.cuda.reset_peak_memory_stats()
         
         print("Loading SDXL model...")
         model_path = "models/stable_diffusion_xl/sd_xl_base_1.0.safetensors"
