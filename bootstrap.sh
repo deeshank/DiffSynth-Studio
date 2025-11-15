@@ -13,6 +13,7 @@ cd /workspace/DiffSynth-Studio
 
 echo ""
 echo "Step 1: Installing requirements..."
+python -m pip install --upgrade pip
 pip install -q -r requirements.txt
 
 echo ""
