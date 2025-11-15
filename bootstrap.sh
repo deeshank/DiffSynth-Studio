@@ -72,11 +72,14 @@ cleanup() {
 
 trap cleanup SIGINT SIGTERM
 
+# Create log directory
+mkdir -p logs
+
 # Start FastAPI backend
 echo ""
 echo -e "${YELLOW}🚀 Starting FastAPI Backend on port 8000...${NC}"
 cd /workspace/DiffSynth-Studio
-python3 -m uvicorn apps.api.main:app --host 0.0.0.0 --port 8000 --reload &
+python3 -m uvicorn apps.api.main:app --host 0.0.0.0 --port 8000 --reload > logs/fastapi.log 2>&1 &
 FASTAPI_PID=$!
 
 # Wait for FastAPI to start
@@ -85,17 +88,13 @@ sleep 3
 # Start React frontend
 echo -e "${YELLOW}⚛️  Starting React Frontend on port 3000...${NC}"
 cd apps/web
-npm run dev &
+npm run dev > ../../logs/react.log 2>&1 &
 REACT_PID=$!
 
 # Wait for React to start
 sleep 3
 
-# Start Streamlit
-# echo -e "${YELLOW}📊 Starting Streamlit on port 8501...${NC}"
-# cd /workspace/DiffSynth-Studio
-# streamlit run apps/streamlit/DiffSynth_Studio.py &
-# STREAMLIT_PID=$!
+cd /workspace/DiffSynth-Studio
 
 echo ""
 echo "=========================================="
@@ -105,11 +104,15 @@ echo ""
 echo -e "${GREEN}🎨 React Web App:${NC}      http://0.0.0.0:3000"
 echo -e "${GREEN}⚡ FastAPI Backend:${NC}    http://0.0.0.0:8000"
 echo -e "${GREEN}📚 API Docs:${NC}           http://0.0.0.0:8000/docs"
-# echo -e "${GREEN}📊 Streamlit:${NC}          http://localhost:8501"
+echo ""
+echo -e "${BLUE}📋 Logs:${NC}"
+echo -e "  FastAPI: logs/fastapi.log"
+echo -e "  React:   logs/react.log"
 echo ""
 echo "=========================================="
 echo -e "${YELLOW}Press Ctrl+C to stop all services${NC}"
 echo "=========================================="
+echo ""
 
-# Wait for all background processes
-wait
+# Tail logs from both services
+tail -f logs/fastapi.log logs/react.log
