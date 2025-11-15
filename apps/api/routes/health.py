@@ -28,14 +28,26 @@ async def health_check():
 @router.get("/models")
 async def list_models():
     """List available models"""
+    sdxl_path = "models/stable_diffusion_xl/sd_xl_base_1.0.safetensors"
+    flux_path = "models/FLUX/FLUX.1-dev/flux1-dev.safetensors"
+    
     return {
         "models": [
             {
                 "id": "sdxl",
                 "name": "Stable Diffusion XL",
-                "path": "models/stable_diffusion_xl/sd_xl_base_1.0.safetensors",
-                "available": os.path.exists("models/stable_diffusion_xl/sd_xl_base_1.0.safetensors"),
-                "features": ["text2img", "img2img"]
+                "path": sdxl_path,
+                "available": os.path.exists(sdxl_path),
+                "features": ["text2img", "img2img"],
+                "vram": "~7GB"
+            },
+            {
+                "id": "flux",
+                "name": "FLUX.1-dev",
+                "path": flux_path,
+                "available": os.path.exists(flux_path),
+                "features": ["text2img", "img2img"],
+                "vram": "~24GB (or 8GB with offload)"
             }
         ]
     }

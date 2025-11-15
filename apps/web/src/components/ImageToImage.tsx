@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import {
   VStack,
   FormControl,
@@ -24,28 +24,30 @@ import {
 } from '@chakra-ui/react'
 import { useDropzone } from 'react-dropzone'
 import { useMutation } from '@tanstack/react-query'
-import { transformImage, TransformRequest } from '../services/api'
+import { transformImage, TransformRequest, ModelConfig } from '../services/api'
 
 interface ImageToImageProps {
   onGenerate: (images: string[], seed: number, time: number) => void
+  modelId: string
+  modelConfig: ModelConfig
 }
 
-const DEFAULT_NEGATIVE_PROMPT = 'nsfw, lowres, bad anatomy, bad hands, text, error, missing fingers, extra digit, fewer digits, cropped, worst quality, low quality, normal quality, jpeg artifacts, signature, watermark, username, blurry'
-
-function ImageToImage({ onGenerate }: ImageToImageProps) {
+function ImageToImage({ onGenerate, modelId, modelConfig }: ImageToImageProps) {
   const toast = useToast()
-  const [prompt, setPrompt] = useState('')
-  const [negativePrompt, setNegativePrompt] = useState(DEFAULT_NEGATIVE_PROMPT)
-  const [showNegative, setShowNegative] = useState(false)
-  const [size, setSize] = useState('1024x1024')
-  const [numImages, setNumImages] = useState(1)
-  const [steps, setSteps] = useState(20)
-  const [cfgScale, setCfgScale] = useState(7.5)
-  const [denoisingStrength, setDenoisingStrength] = useState(0.75)
-  const [useFixedSeed, setUseFixedSeed] = useState(false)
-  const [seed, setSeed] = useState(42)
+  const [formData, setFormData] = useState<Record<string, any>>({})
   const [uploadedFile, setUploadedFile] = useState<File | null>(null)
   const [previewUrl, setPreviewUrl] = useState<string | null>(null)
+
+  // Initialize form data with defaults
+  useEffect(() => {
+    const initialData: Record<string, any> = {}
+    Object.entries(modelConfig.parameters).forEach(([key, param]) => {
+      if (param.default !== undefined) {
+        initialData[key] = param.default
+      }
+    })
+    setFormData(initialData)
+  }, [modelConfig])
 
   const onDrop = (acceptedFiles: File[]) => {
     if (acceptedFiles.length > 0) {
@@ -65,7 +67,7 @@ function ImageToImage({ onGenerate }: ImageToImageProps) {
 
   const mutation = useMutation({
     mutationFn: ({ data, file }: { data: TransformRequest; file: File }) =>
-      transformImage(data, file),
+      transformImage(modelId, data, file),
     onSuccess: (data) => {
       onGenerate(data.images, data.seed, data.generation_time)
       toast({
@@ -88,7 +90,7 @@ function ImageToImage({ onGenerate }: ImageToImageProps) {
   })
 
   const handleTransform = () => {
-    if (!prompt.trim()) {
+    if (!formData.prompt?.trim()) {
       toast({
         title: 'Prompt Required',
         description: 'Please enter a prompt',
@@ -108,28 +110,165 @@ function ImageToImage({ onGenerate }: ImageToImageProps) {
       return
     }
 
-    const [width, height] = size.split('x').map(Number)
+    const requestData: TransformRequest = {
+      prompt: formData.prompt,
+      width: formData.width,
+      height: formData.height,
+      num_images: formData.num_images,
+      steps: formData.steps,
+      denoising_strength: formData.denoising_strength,
+    }
 
-    mutation.mutate({
-      data: {
-        prompt,
-        negative_prompt: negativePrompt,
-        width,
-        height,
-        num_images: numImages,
-        steps,
-        cfg_scale: cfgScale,
-        denoising_strength: denoisingStrength,
-        seed: useFixedSeed ? seed : undefined,
-      },
-      file: uploadedFile,
-    })
+    // Add model-specific parameters
+    if (modelId === 'sdxl') {
+      requestData.negative_prompt = formData.negative_prompt
+      requestData.cfg_scale = formData.cfg_scale
+    } else if (modelId === 'flux') {
+      requestData.guidance = formData.guidance
+      requestData.tiled = formData.tiled
+    }
+
+    // Add optional seed
+    if (formData.use_fixed_seed) {
+      requestData.seed = formData.seed
+    }
+
+    mutation.mutate({ data: requestData, file: uploadedFile })
+  }
+
+  const updateFormData = (key: string, value: any) => {
+    setFormData((prev) => ({ ...prev, [key]: value }))
   }
 
   const getStrengthLabel = () => {
-    if (denoisingStrength < 0.4) return '✨ Light Touch'
-    if (denoisingStrength > 0.7) return '🔥 Heavy Transform'
+    const strength = formData.denoising_strength || 0.75
+    if (strength < 0.4) return '✨ Light Touch'
+    if (strength > 0.7) return '🔥 Heavy Transform'
     return '⚖️ Balanced'
+  }
+
+  const renderControl = (key: string, param: any) => {
+    switch (param.type) {
+      case 'text':
+        if (param.collapsible) {
+          return (
+            <FormControl key={key}>
+              <Checkbox
+                isChecked={formData[`show_${key}`]}
+                onChange={(e) => updateFormData(`show_${key}`, e.target.checked)}
+                mb={2}
+              >
+                <FormLabel mb={0}>{param.label}</FormLabel>
+              </Checkbox>
+              <Collapse in={formData[`show_${key}`]}>
+                <Textarea
+                  value={formData[key] || ''}
+                  onChange={(e) => updateFormData(key, e.target.value)}
+                  placeholder={param.placeholder}
+                  rows={param.rows || 3}
+                  resize="vertical"
+                />
+              </Collapse>
+            </FormControl>
+          )
+        }
+        return (
+          <FormControl key={key}>
+            <FormLabel>{param.label}</FormLabel>
+            <Textarea
+              value={formData[key] || ''}
+              onChange={(e) => updateFormData(key, e.target.value)}
+              placeholder={param.placeholder}
+              rows={param.rows || 4}
+              resize="vertical"
+            />
+          </FormControl>
+        )
+
+      case 'number':
+        if (param.label.includes('Steps') || param.label.includes('CFG') || param.label.includes('Guidance') || param.label.includes('Denoising')) {
+          return (
+            <FormControl key={key}>
+              <FormLabel>
+                {param.label}: {(formData[key] || param.default).toFixed(2)} {key === 'denoising_strength' && getStrengthLabel()}
+              </FormLabel>
+              <Slider
+                value={formData[key] || param.default}
+                onChange={(val) => updateFormData(key, val)}
+                min={param.min}
+                max={param.max}
+                step={param.step || 1}
+              >
+                <SliderTrack>
+                  <SliderFilledTrack />
+                </SliderTrack>
+                <SliderThumb />
+              </Slider>
+              {param.help && (
+                <Text fontSize="xs" color="gray.500">
+                  {param.help}
+                </Text>
+              )}
+            </FormControl>
+          )
+        }
+
+        if (param.label.includes('Width') || param.label.includes('Height')) {
+          return (
+            <FormControl key={key}>
+              <FormLabel>{param.label}</FormLabel>
+              <Select
+                value={formData[key] || param.default}
+                onChange={(e) => updateFormData(key, Number(e.target.value))}
+              >
+                {param.presets?.map((preset: number) => (
+                  <option key={preset} value={preset}>
+                    {preset}
+                  </option>
+                ))}
+              </Select>
+            </FormControl>
+          )
+        }
+
+        return (
+          <FormControl key={key}>
+            <FormLabel>{param.label}</FormLabel>
+            <NumberInput
+              value={formData[key] || param.default}
+              onChange={(_, val) => updateFormData(key, val)}
+              min={param.min}
+              max={param.max}
+            >
+              <NumberInputField />
+              <NumberInputStepper>
+                <NumberIncrementStepper />
+                <NumberDecrementStepper />
+              </NumberInputStepper>
+            </NumberInput>
+          </FormControl>
+        )
+
+      case 'boolean':
+        return (
+          <FormControl key={key}>
+            <Checkbox
+              isChecked={formData[key] || param.default}
+              onChange={(e) => updateFormData(key, e.target.checked)}
+            >
+              {param.label}
+            </Checkbox>
+            {param.help && (
+              <Text fontSize="xs" color="gray.500" ml={6}>
+                {param.help}
+              </Text>
+            )}
+          </FormControl>
+        )
+
+      default:
+        return null
+    }
   }
 
   return (
@@ -161,124 +300,23 @@ function ImageToImage({ onGenerate }: ImageToImageProps) {
         </Box>
       </FormControl>
 
-      {/* Denoising Strength */}
-      {uploadedFile && (
-        <FormControl>
-          <FormLabel>
-            Transformation Strength: {denoisingStrength.toFixed(2)} {getStrengthLabel()}
-          </FormLabel>
-          <Slider
-            value={denoisingStrength}
-            onChange={setDenoisingStrength}
-            min={0}
-            max={1}
-            step={0.05}
-          >
-            <SliderTrack>
-              <SliderFilledTrack />
-            </SliderTrack>
-            <SliderThumb />
-          </Slider>
-          <Text fontSize="xs" color="gray.500">
-            Higher = more changes, Lower = closer to original
-          </Text>
-        </FormControl>
-      )}
+      {/* Render all parameters dynamically */}
+      {Object.entries(modelConfig.parameters)
+        .filter(([_, param]) => !param.advanced)
+        .map(([key, param]) => renderControl(key, param))}
 
-      {/* Prompt */}
-      <FormControl>
-        <FormLabel>Prompt</FormLabel>
-        <Textarea
-          value={prompt}
-          onChange={(e) => setPrompt(e.target.value)}
-          placeholder="Describe how to transform the image..."
-          rows={4}
-          resize="vertical"
-        />
-      </FormControl>
-
-      {/* Negative Prompt */}
+      {/* Seed Control */}
       <FormControl>
         <Checkbox
-          isChecked={showNegative}
-          onChange={(e) => setShowNegative(e.target.checked)}
-          mb={2}
-        >
-          <FormLabel mb={0}>Negative Prompt</FormLabel>
-        </Checkbox>
-        <Collapse in={showNegative}>
-          <Textarea
-            value={negativePrompt}
-            onChange={(e) => setNegativePrompt(e.target.value)}
-            rows={3}
-            resize="vertical"
-          />
-        </Collapse>
-      </FormControl>
-
-      {/* Size */}
-      <FormControl>
-        <FormLabel>Output Size</FormLabel>
-        <Select value={size} onChange={(e) => setSize(e.target.value)}>
-          <option value="512x512">512 × 512</option>
-          <option value="768x768">768 × 768</option>
-          <option value="1024x1024">1024 × 1024</option>
-          <option value="768x1024">768 × 1024 (Portrait)</option>
-          <option value="1024x768">1024 × 768 (Landscape)</option>
-        </Select>
-      </FormControl>
-
-      {/* Number of Images */}
-      <FormControl>
-        <FormLabel>Number of Variations</FormLabel>
-        <NumberInput
-          value={numImages}
-          onChange={(_, val) => setNumImages(val)}
-          min={1}
-          max={4}
-        >
-          <NumberInputField />
-          <NumberInputStepper>
-            <NumberIncrementStepper />
-            <NumberDecrementStepper />
-          </NumberInputStepper>
-        </NumberInput>
-      </FormControl>
-
-      {/* Steps */}
-      <FormControl>
-        <FormLabel>Inference Steps: {steps}</FormLabel>
-        <Slider value={steps} onChange={setSteps} min={10} max={50} step={1}>
-          <SliderTrack>
-            <SliderFilledTrack />
-          </SliderTrack>
-          <SliderThumb />
-        </Slider>
-      </FormControl>
-
-      {/* CFG Scale */}
-      <FormControl>
-        <FormLabel>CFG Scale: {cfgScale.toFixed(1)}</FormLabel>
-        <Slider value={cfgScale} onChange={setCfgScale} min={1} max={15} step={0.5}>
-          <SliderTrack>
-            <SliderFilledTrack />
-          </SliderTrack>
-          <SliderThumb />
-        </Slider>
-      </FormControl>
-
-      {/* Seed */}
-      <FormControl>
-        <Checkbox
-          isChecked={useFixedSeed}
-          onChange={(e) => setUseFixedSeed(e.target.checked)}
+          isChecked={formData.use_fixed_seed}
+          onChange={(e) => updateFormData('use_fixed_seed', e.target.checked)}
         >
           Use Fixed Seed
         </Checkbox>
-        {useFixedSeed && (
+        {formData.use_fixed_seed && (
           <NumberInput
-            value={seed}
-            onChange={(_, val) => setSeed(val)}
+            value={formData.seed || 42}
+            onChange={(_, val) => updateFormData('seed', val)}
             min={0}
             max={999999999}
             mt={2}
@@ -288,6 +326,25 @@ function ImageToImage({ onGenerate }: ImageToImageProps) {
         )}
       </FormControl>
 
+      {/* Advanced Options */}
+      {Object.entries(modelConfig.parameters).some(([_, param]) => param.advanced) && (
+        <FormControl>
+          <Checkbox
+            isChecked={formData.show_advanced}
+            onChange={(e) => updateFormData('show_advanced', e.target.checked)}
+          >
+            <FormLabel mb={0}>Advanced Options</FormLabel>
+          </Checkbox>
+          <Collapse in={formData.show_advanced}>
+            <VStack spacing={4} align="stretch" mt={4}>
+              {Object.entries(modelConfig.parameters)
+                .filter(([_, param]) => param.advanced)
+                .map(([key, param]) => renderControl(key, param))}
+            </VStack>
+          </Collapse>
+        </FormControl>
+      )}
+
       {/* Transform Button */}
       <Button
         colorScheme="brand"
@@ -295,7 +352,7 @@ function ImageToImage({ onGenerate }: ImageToImageProps) {
         onClick={handleTransform}
         isLoading={mutation.isPending}
         loadingText="Transforming..."
-        isDisabled={!prompt.trim() || !uploadedFile}
+        isDisabled={!formData.prompt?.trim() || !uploadedFile}
       >
         🎨 Transform Image
       </Button>

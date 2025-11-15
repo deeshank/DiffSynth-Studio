@@ -7,12 +7,12 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 import os
 
-from apps.api.routes import sdxl, health
+from apps.api.routes import sdxl, flux, health, models
 
 # Create FastAPI app
 app = FastAPI(
     title="Dee Studio API",
-    description="REST API for SDXL image generation",
+    description="REST API for AI image generation (SDXL & FLUX)",
     version="1.0.0"
 )
 
@@ -32,7 +32,9 @@ app.add_middleware(
 
 # Include routers
 app.include_router(health.router, prefix="/api", tags=["Health"])
+app.include_router(models.router, prefix="/api/models", tags=["Models"])
 app.include_router(sdxl.router, prefix="/api/sdxl", tags=["SDXL"])
+app.include_router(flux.router, prefix="/api/flux", tags=["FLUX"])
 
 # Serve React build in production (optional)
 if os.path.exists("apps/web/dist"):

@@ -24,6 +24,7 @@ python3 -m pip install --upgrade pip --break-system-packages 2>/dev/null || true
 
 echo ""
 echo -e "${BLUE}Step 2: Installing Python requirements...${NC}"
+pip3 install streamlit --ignore-installed blinker
 pip3 install -r requirements.txt
 
 echo ""

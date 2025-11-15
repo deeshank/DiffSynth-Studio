@@ -18,6 +18,9 @@ MODELS_TO_DOWNLOAD = [
     # Stable Diffusion XL (recommended for beginners, ~6.5GB)
     "StableDiffusionXL_v1",
     
+    # FLUX.1-dev (high quality, ~24GB total)
+    "FLUX.1-dev",
+    
     # Stable Diffusion XL Turbo (fast generation, ~6.5GB)
     # "StableDiffusionXL_Turbo",
     
@@ -26,9 +29,6 @@ MODELS_TO_DOWNLOAD = [
     
     # DreamShaper 8 (popular SD1.5 model, ~2GB)
     # "DreamShaper_8",
-    
-    # FLUX.1-dev (high quality, requires separate download - see below)
-    # Note: FLUX models are very large and need to be downloaded from ModelScope/HuggingFace
     
     # Stable Diffusion 3 (~10GB)
     # "StableDiffusion3",
@@ -48,6 +48,7 @@ def check_model_exists(model_name):
         "StableDiffusion3": "models/stable_diffusion_3/sd3_medium_incl_clips_t5xxlfp16.safetensors",
         "AnimateDiff_v2": "models/AnimateDiff/mm_sd_v15_v2.ckpt",
         "AnimateDiff_xl_beta": "models/AnimateDiff/mm_sdxl_v10_beta.ckpt",
+        "FLUX.1-dev": "models/FLUX/FLUX.1-dev/flux1-dev.safetensors",
     }
     
     if model_name in model_dirs:
