@@ -1,3 +1,3 @@
 """
-DiffSynth Studio API
+Dee Studio API
 """

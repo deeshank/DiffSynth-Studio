@@ -28,7 +28,7 @@ function App() {
           <VStack spacing={2} align="start">
             <HStack spacing={4}>
               <Heading size="lg" bgGradient="linear(to-r, blue.400, purple.500)" bgClip="text">
-                🎨 DiffSynth Studio
+                🎨 Dee Studio
               </Heading>
               {!isLoading && health && (
                 <HStack spacing={2}>
@@ -57,7 +57,7 @@ function App() {
       <Box as="footer" py={6} mt={12} borderTop="1px" borderColor="gray.700">
         <Container maxW="container.xl">
           <Text textAlign="center" color="gray.500" fontSize="sm">
-            Powered by DiffSynth Studio • Stable Diffusion XL
+            Powered by Dee Studio • Stable Diffusion XL
           </Text>
         </Container>
       </Box>

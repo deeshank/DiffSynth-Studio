@@ -1,5 +1,5 @@
 """
-FastAPI Backend for DiffSynth Studio
+FastAPI Backend for Dee Studio
 Provides REST API for SDXL image generation
 """
 from fastapi import FastAPI
@@ -11,7 +11,7 @@ from apps.api.routes import sdxl, health
 
 # Create FastAPI app
 app = FastAPI(
-    title="DiffSynth Studio API",
+    title="Dee Studio API",
     description="REST API for SDXL image generation",
     version="1.0.0"
 )
@@ -42,7 +42,7 @@ if os.path.exists("apps/web/dist"):
 async def root():
     """Root endpoint"""
     return {
-        "message": "DiffSynth Studio API",
+        "message": "Dee Studio API",
         "version": "1.0.0",
         "docs": "/docs",
         "health": "/api/health"
