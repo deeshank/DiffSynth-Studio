@@ -58,14 +58,14 @@ def get_flux_pipeline():
             raise HTTPException(status_code=404, detail="FLUX model not found. Please download it first.")
         
         print("Loading FLUX model...")
-        model_manager = ModelManager(torch_dtype=torch.bfloat16)
+        model_manager = ModelManager(dtype=torch.bfloat16)
         model_manager.load_models([
             f"{model_path}/text_encoder/model.safetensors",
             f"{model_path}/text_encoder_2",
             f"{model_path}/ae.safetensors",
             f"{model_path}/flux1-dev.safetensors",
         ])
-        pipeline = FluxImagePipeline.from_model_manager(model_manager)
+        pipeline = FluxImagePipeline.from_model_manager(model_manager, torch_dtype=torch.bfloat16)
         _model_cache["flux_pipeline"] = pipeline
         print("FLUX model loaded successfully")
     
@@ -109,6 +109,7 @@ async def generate_images(request: FluxGenerateRequest):
         for i in range(request.num_images):
             torch.manual_seed(seed + i)
             
+            print(f"Generating image {i+1}/{request.num_images}...")
             image = pipeline(
                 prompt=request.prompt,
                 embedded_guidance=request.guidance,
@@ -120,10 +121,12 @@ async def generate_images(request: FluxGenerateRequest):
             )
             
             # Convert to base64
+            print(f"Converting image {i+1} to base64...")
             img_base64 = image_to_base64(image)
             images.append(img_base64)
         
         generation_time = time.time() - start_time
+        print(f"Generation complete in {generation_time:.2f}s")
         
         return ImageResponse(
             images=images,
@@ -132,6 +135,9 @@ async def generate_images(request: FluxGenerateRequest):
         )
     
     except Exception as e:
+        import traceback
+        error_details = traceback.format_exc()
+        print(f"Error during generation: {error_details}")
         raise HTTPException(status_code=500, detail=str(e))
 
 @router.post("/transform", response_model=ImageResponse)
