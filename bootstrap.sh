@@ -35,7 +35,19 @@ echo -e "${BLUE}Step 4: Downloading models...${NC}"
 python3 download_models.py
 
 echo ""
-echo -e "${BLUE}Step 5: Installing Node.js dependencies...${NC}"
+echo -e "${BLUE}Step 5: Checking Node.js installation...${NC}"
+if ! command -v node &> /dev/null; then
+    echo "Node.js not found. Installing Node.js 20.x..."
+    curl -fsSL https://deb.nodesource.com/setup_20.x | bash -
+    apt-get install -y nodejs
+    echo "Node.js installed: $(node --version)"
+    echo "npm installed: $(npm --version)"
+else
+    echo "Node.js already installed: $(node --version)"
+fi
+
+echo ""
+echo -e "${BLUE}Step 6: Installing Node.js dependencies...${NC}"
 cd apps/web
 if [ ! -d "node_modules" ]; then
     echo "Installing npm packages (this may take a few minutes)..."
