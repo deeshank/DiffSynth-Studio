@@ -473,7 +473,7 @@ with col_output:
             col_idx = idx % num_cols
             with cols[col_idx]:
                 # Display image
-                st.image(image, use_column_width=True)
+                st.image(image, use_container_width=True)
                 
                 # Action buttons
                 col_dl, col_info = st.columns([2, 1])
