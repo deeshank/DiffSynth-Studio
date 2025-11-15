@@ -44,6 +44,12 @@ def get_flux_pipeline():
         print("Clearing all cached models...")
         _model_cache.clear()
         
+        # Check VRAM before loading
+        if torch.cuda.is_available():
+            allocated = torch.cuda.memory_allocated(0) / 1024**3
+            reserved = torch.cuda.memory_reserved(0) / 1024**3
+            print(f"VRAM before cleanup: Allocated={allocated:.2f}GB, Reserved={reserved:.2f}GB")
+        
         # Aggressive VRAM cleanup
         import gc
         gc.collect()
@@ -51,22 +57,35 @@ def get_flux_pipeline():
         torch.cuda.synchronize()
         torch.cuda.reset_peak_memory_stats()
         
+        if torch.cuda.is_available():
+            allocated = torch.cuda.memory_allocated(0) / 1024**3
+            reserved = torch.cuda.memory_reserved(0) / 1024**3
+            print(f"VRAM after cleanup: Allocated={allocated:.2f}GB, Reserved={reserved:.2f}GB")
+            
+            if allocated > 1.0:  # More than 1GB still allocated
+                raise HTTPException(
+                    status_code=503,
+                    detail=f"GPU memory not freed. {allocated:.2f}GB still allocated. Please restart the server or switch from SDXL first."
+                )
+        
         model_path = "models/FLUX/FLUX.1-dev"
         
         # Check if model exists
         if not os.path.exists(f"{model_path}/flux1-dev.safetensors"):
             raise HTTPException(status_code=404, detail="FLUX model not found. Please download it first.")
         
-        print("Loading FLUX model...")
-        model_manager = ModelManager(torch_dtype=torch.bfloat16, device="cuda")
+        print("Loading FLUX model to CPU (to save VRAM)...")
+        model_manager = ModelManager(torch_dtype=torch.bfloat16, device="cpu")
         model_manager.load_models([
             f"{model_path}/text_encoder/model.safetensors",
             f"{model_path}/text_encoder_2",
             f"{model_path}/ae.safetensors",
             f"{model_path}/flux1-dev.safetensors",
         ])
-        print("Creating FLUX pipeline...")
-        pipeline = FluxImagePipeline.from_model_manager(model_manager, torch_dtype=torch.bfloat16, device="cuda")
+        print("Creating FLUX pipeline with CPU offload...")
+        pipeline = FluxImagePipeline.from_model_manager(model_manager, device="cuda")
+        pipeline.enable_cpu_offload()
+        print("FLUX pipeline ready with CPU offload enabled")
         _model_cache["flux_pipeline"] = pipeline
         print("FLUX model loaded successfully")
     
