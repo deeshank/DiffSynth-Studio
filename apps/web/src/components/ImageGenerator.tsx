@@ -11,9 +11,7 @@ import {
   Select,
   FormControl,
   FormLabel,
-  HStack,
   Text,
-  Badge,
   useToast,
 } from '@chakra-ui/react'
 import { useQuery } from '@tanstack/react-query'
@@ -84,45 +82,44 @@ function ImageGenerator() {
 
   return (
     <Box>
-      {/* Model Selector */}
-      <Box mb={6} bg="gray.800" p={4} borderRadius="xl" borderWidth="1px" borderColor="gray.700">
-        <FormControl>
-          <HStack spacing={4} align="center">
-            <FormLabel mb={0} minW="100px">Model:</FormLabel>
-            <Select
-              value={selectedModel}
-              onChange={(e) => setSelectedModel(e.target.value)}
-              size="lg"
-              maxW="400px"
-            >
-              {modelsConfig?.models.map((model) => (
-                <option key={model.id} value={model.id}>
-                  {model.name}
-                </option>
-              ))}
-            </Select>
-            <Badge colorScheme="purple" fontSize="sm" px={3} py={1}>
-              {modelConfig.description}
-            </Badge>
-          </HStack>
-        </FormControl>
-      </Box>
-
       <Grid templateColumns={{ base: '1fr', lg: '1fr 1.5fr' }} gap={6}>
         {/* Left Panel - Controls */}
         <GridItem>
           <Box
             bg="gray.800"
-            borderRadius="xl"
-            p={6}
+            borderRadius="lg"
+            p={5}
             borderWidth="1px"
             borderColor="gray.700"
-            boxShadow="xl"
+            boxShadow="lg"
           >
-            <Tabs colorScheme="brand" variant="soft-rounded">
-              <TabList mb={4}>
-                <Tab>📝 Text to Image</Tab>
-                <Tab>🖼️ Image to Image</Tab>
+            {/* Model Selector - Compact */}
+            <FormControl mb={4}>
+              <FormLabel fontSize="sm" fontWeight="semibold" mb={2}>
+                Model
+              </FormLabel>
+              <Select
+                value={selectedModel}
+                onChange={(e) => setSelectedModel(e.target.value)}
+                size="sm"
+                bg="gray.900"
+                borderColor="gray.600"
+              >
+                {modelsConfig?.models.map((model) => (
+                  <option key={model.id} value={model.id}>
+                    {model.name}
+                  </option>
+                ))}
+              </Select>
+              <Text fontSize="xs" color="gray.500" mt={1}>
+                {modelConfig.description}
+              </Text>
+            </FormControl>
+
+            <Tabs colorScheme="brand" variant="soft-rounded" size="sm">
+              <TabList mb={3}>
+                <Tab fontSize="sm">📝 Text to Image</Tab>
+                <Tab fontSize="sm">🖼️ Image to Image</Tab>
               </TabList>
 
               <TabPanels>

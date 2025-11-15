@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import {
   VStack,
+  Box,
   FormControl,
   FormLabel,
   Textarea,
@@ -120,8 +121,9 @@ function TextToImage({ onGenerate, modelId, modelConfig }: TextToImageProps) {
                 isChecked={formData[`show_${key}`]}
                 onChange={(e) => updateFormData(`show_${key}`, e.target.checked)}
                 mb={2}
+                size="sm"
               >
-                <FormLabel mb={0}>{param.label}</FormLabel>
+                <FormLabel mb={0} fontSize="sm">{param.label}</FormLabel>
               </Checkbox>
               <Collapse in={formData[`show_${key}`]}>
                 <Textarea
@@ -130,6 +132,8 @@ function TextToImage({ onGenerate, modelId, modelConfig }: TextToImageProps) {
                   placeholder={param.placeholder}
                   rows={param.rows || 3}
                   resize="vertical"
+                  size="sm"
+                  bg="gray.900"
                 />
               </Collapse>
             </FormControl>
@@ -137,13 +141,15 @@ function TextToImage({ onGenerate, modelId, modelConfig }: TextToImageProps) {
         }
         return (
           <FormControl key={key}>
-            <FormLabel>{param.label}</FormLabel>
+            <FormLabel fontSize="sm" fontWeight="semibold">{param.label}</FormLabel>
             <Textarea
               value={formData[key] || ''}
               onChange={(e) => updateFormData(key, e.target.value)}
               placeholder={param.placeholder}
-              rows={param.rows || 4}
+              rows={param.rows || 3}
               resize="vertical"
+              size="sm"
+              bg="gray.900"
             />
             <Text fontSize="xs" color="gray.500" mt={1}>
               {(formData[key] || '').length} characters
@@ -155,8 +161,8 @@ function TextToImage({ onGenerate, modelId, modelConfig }: TextToImageProps) {
         if (param.label.includes('Steps') || param.label.includes('CFG') || param.label.includes('Guidance')) {
           return (
             <FormControl key={key}>
-              <FormLabel>
-                {param.label}: {formData[key] || param.default}
+              <FormLabel fontSize="sm" fontWeight="semibold">
+                {param.label}: <Text as="span" color="brand.400">{formData[key] || param.default}</Text>
               </FormLabel>
               <Slider
                 value={formData[key] || param.default}
@@ -164,14 +170,15 @@ function TextToImage({ onGenerate, modelId, modelConfig }: TextToImageProps) {
                 min={param.min}
                 max={param.max}
                 step={param.step || 1}
+                size="sm"
               >
-                <SliderTrack>
-                  <SliderFilledTrack />
+                <SliderTrack bg="gray.700">
+                  <SliderFilledTrack bg="brand.500" />
                 </SliderTrack>
-                <SliderThumb />
+                <SliderThumb boxSize={4} />
               </Slider>
               {param.help && (
-                <Text fontSize="xs" color="gray.500">
+                <Text fontSize="xs" color="gray.500" mt={1}>
                   {param.help}
                 </Text>
               )}
@@ -182,10 +189,12 @@ function TextToImage({ onGenerate, modelId, modelConfig }: TextToImageProps) {
         if (param.label.includes('Width') || param.label.includes('Height')) {
           return (
             <FormControl key={key}>
-              <FormLabel>{param.label}</FormLabel>
+              <FormLabel fontSize="sm" fontWeight="semibold">{param.label}</FormLabel>
               <Select
                 value={formData[key] || param.default}
                 onChange={(e) => updateFormData(key, Number(e.target.value))}
+                size="sm"
+                bg="gray.900"
               >
                 {param.presets?.map((preset: number) => (
                   <option key={preset} value={preset}>
@@ -199,21 +208,22 @@ function TextToImage({ onGenerate, modelId, modelConfig }: TextToImageProps) {
 
         return (
           <FormControl key={key}>
-            <FormLabel>{param.label}</FormLabel>
+            <FormLabel fontSize="sm" fontWeight="semibold">{param.label}</FormLabel>
             <NumberInput
               value={formData[key] || param.default}
               onChange={(_, val) => updateFormData(key, val)}
               min={param.min}
               max={param.max}
+              size="sm"
             >
-              <NumberInputField />
+              <NumberInputField bg="gray.900" />
               <NumberInputStepper>
                 <NumberIncrementStepper />
                 <NumberDecrementStepper />
               </NumberInputStepper>
             </NumberInput>
             {param.help && (
-              <Text fontSize="xs" color="gray.500">
+              <Text fontSize="xs" color="gray.500" mt={1}>
                 {param.help}
               </Text>
             )}
@@ -243,60 +253,65 @@ function TextToImage({ onGenerate, modelId, modelConfig }: TextToImageProps) {
   }
 
   return (
-    <VStack spacing={4} align="stretch">
+    <VStack spacing={3} align="stretch">
       {/* Render all parameters dynamically */}
       {Object.entries(modelConfig.parameters)
         .filter(([_, param]) => !param.advanced && !param.img2img_only)
         .map(([key, param]) => renderControl(key, param))}
 
-      {/* Seed Control */}
-      <FormControl>
+      {/* Seed Control - Collapsible */}
+      <Box borderTop="1px" borderColor="gray.700" pt={3}>
         <Checkbox
           isChecked={formData.use_fixed_seed}
           onChange={(e) => updateFormData('use_fixed_seed', e.target.checked)}
+          size="sm"
         >
-          Use Fixed Seed
+          <Text fontSize="sm" fontWeight="semibold">🎲 Use Fixed Seed</Text>
         </Checkbox>
-        {formData.use_fixed_seed && (
+        <Collapse in={formData.use_fixed_seed}>
           <NumberInput
             value={formData.seed || 42}
             onChange={(_, val) => updateFormData('seed', val)}
             min={0}
             max={999999999}
             mt={2}
+            size="sm"
           >
-            <NumberInputField />
+            <NumberInputField bg="gray.900" />
           </NumberInput>
-        )}
-      </FormControl>
+        </Collapse>
+      </Box>
 
-      {/* Advanced Options */}
+      {/* Advanced Options - Collapsible */}
       {Object.entries(modelConfig.parameters).some(([_, param]) => param.advanced) && (
-        <FormControl>
+        <Box borderTop="1px" borderColor="gray.700" pt={3}>
           <Checkbox
             isChecked={formData.show_advanced}
             onChange={(e) => updateFormData('show_advanced', e.target.checked)}
+            size="sm"
           >
-            <FormLabel mb={0}>Advanced Options</FormLabel>
+            <Text fontSize="sm" fontWeight="semibold">⚙️ Advanced Options</Text>
           </Checkbox>
           <Collapse in={formData.show_advanced}>
-            <VStack spacing={4} align="stretch" mt={4}>
+            <VStack spacing={3} align="stretch" mt={3}>
               {Object.entries(modelConfig.parameters)
                 .filter(([_, param]) => param.advanced)
                 .map(([key, param]) => renderControl(key, param))}
             </VStack>
           </Collapse>
-        </FormControl>
+        </Box>
       )}
 
       {/* Generate Button */}
       <Button
         colorScheme="brand"
-        size="lg"
+        size="md"
         onClick={handleGenerate}
         isLoading={mutation.isPending}
         loadingText="Generating..."
         isDisabled={!formData.prompt?.trim()}
+        w="full"
+        mt={2}
       >
         🚀 Generate Images
       </Button>

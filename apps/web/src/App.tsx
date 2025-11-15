@@ -1,4 +1,4 @@
-import { Box, Container, Heading, Text, VStack, HStack, Badge, useToast } from '@chakra-ui/react'
+import { Box, Container, Heading, Text, HStack, Badge, useToast } from '@chakra-ui/react'
 import { useQuery } from '@tanstack/react-query'
 import { checkHealth } from './services/api'
 import ImageGenerator from './components/ImageGenerator'
@@ -23,28 +23,25 @@ function App() {
   return (
     <Box minH="100vh" bg="gray.900">
       {/* Header */}
-      <Box bg="gray.800" borderBottom="1px" borderColor="gray.700" py={4}>
+      <Box bg="gray.800" borderBottom="1px" borderColor="gray.700" py={3}>
         <Container maxW="container.xl">
-          <VStack spacing={2} align="start">
-            <HStack spacing={4}>
-              <Heading size="lg" bgGradient="linear(to-r, blue.400, purple.500)" bgClip="text">
+          <HStack justify="space-between">
+            <HStack spacing={3}>
+              <Heading size="md" bgGradient="linear(to-r, blue.400, purple.500)" bgClip="text">
                 🎨 Dee Studio
               </Heading>
-              {!isLoading && health && (
-                <HStack spacing={2}>
-                  <Badge colorScheme={health.cuda_available ? 'green' : 'yellow'}>
-                    {health.cuda_available ? `GPU: ${health.gpu_name}` : 'CPU Mode'}
-                  </Badge>
-                  <Badge colorScheme={health.model_loaded ? 'green' : 'red'}>
-                    {health.model_loaded ? 'Model Ready' : 'Model Not Found'}
-                  </Badge>
-                </HStack>
-              )}
+              <Text color="gray.500" fontSize="sm">
+                AI Image Generation
+              </Text>
             </HStack>
-            <Text color="gray.400" fontSize="sm">
-              Generate stunning images with Stable Diffusion XL
-            </Text>
-          </VStack>
+            {!isLoading && health && (
+              <HStack spacing={2}>
+                <Badge colorScheme={health.cuda_available ? 'green' : 'yellow'} fontSize="xs">
+                  {health.cuda_available ? `${health.gpu_name}` : 'CPU'}
+                </Badge>
+              </HStack>
+            )}
+          </HStack>
         </Container>
       </Box>
 
