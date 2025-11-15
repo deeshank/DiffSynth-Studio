@@ -203,9 +203,10 @@ with col_output:
         }
         
         st.success(f"✨ Generated {len(images)} image(s) successfully!")
+        st.rerun()
     
     # Display images
-    if "generated_images" in st.session_state:
+    if "generated_images" in st.session_state and len(st.session_state["generated_images"]) > 0:
         images = st.session_state["generated_images"]
         params = st.session_state.get("generation_params", {})
         
@@ -217,29 +218,31 @@ with col_output:
             st.markdown(f"**CFG Scale:** {params.get('cfg_scale', 'N/A')}")
             st.markdown(f"**Seed:** {params.get('seed', 'N/A')}")
         
+        st.markdown("---")
+        
         # Display images in grid
-        if len(images) == 1:
-            cols = [st.container()]
-        elif len(images) == 2:
-            cols = st.columns(2)
-        else:
-            cols = st.columns(2)
+        num_cols = min(2, len(images))
+        cols = st.columns(num_cols)
         
         for idx, image in enumerate(images):
-            with cols[idx % len(cols)]:
+            col_idx = idx % num_cols
+            with cols[col_idx]:
+                # Display image
                 st.image(image, use_container_width=True)
                 
-                col_download, col_info = st.columns([1, 1])
-                with col_download:
-                    st.download_button(
-                        label=f"⬇️ Download #{idx+1}",
-                        data=image_to_bytes(image),
-                        file_name=f"sdxl_image_{idx+1}.png",
-                        mime="image/png",
-                        use_container_width=True
-                    )
-                with col_info:
-                    st.caption(f"Image {idx+1} • {image.size[0]}×{image.size[1]}")
+                # Download button
+                st.download_button(
+                    label=f"⬇️ Download Image {idx+1}",
+                    data=image_to_bytes(image),
+                    file_name=f"sdxl_image_{idx+1}.png",
+                    mime="image/png",
+                    use_container_width=True,
+                    key=f"download_{idx}"
+                )
+                
+                # Image info
+                st.caption(f"📐 {image.size[0]} × {image.size[1]} pixels")
+                st.markdown("---")
     else:
         # Placeholder
         st.info("👆 Configure your settings and click 'Generate Images' to start creating!")
