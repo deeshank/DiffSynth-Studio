@@ -58,7 +58,7 @@ def get_flux_pipeline():
             raise HTTPException(status_code=404, detail="FLUX model not found. Please download it first.")
         
         print("Loading FLUX model...")
-        model_manager = ModelManager(dtype=torch.bfloat16)
+        model_manager = ModelManager(torch_dtype=torch.bfloat16)
         model_manager.load_models([
             f"{model_path}/text_encoder/model.safetensors",
             f"{model_path}/text_encoder_2",
