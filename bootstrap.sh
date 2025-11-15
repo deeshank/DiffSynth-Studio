@@ -1,61 +1,103 @@
 #!/bin/bash
 
 # DiffSynth-Studio Bootstrap Script
+# Starts FastAPI backend, React frontend, and Streamlit
 
 set -e  # Exit on error
 
-echo "=================================="
+echo "=========================================="
 echo "DiffSynth-Studio Bootstrap"
-echo "=================================="
+echo "=========================================="
 
 # Ensure we're in the correct directory
 cd /workspace/DiffSynth-Studio
 
-# echo ""
-# echo "Step 1: Installing system dependencies..."
-# apt-get update -qq
-# apt-get install -y -qq python3 python3-pip python3-venv git wget curl
-
-# echo ""
-# echo "Step 2: Setting up Python..."
-# # Create symlinks if they don't exist
-# if [ ! -f /usr/bin/python ]; then
-#     ln -s /usr/bin/python3 /usr/bin/python
-# fi
-# if [ ! -f /usr/bin/pip ]; then
-#     ln -s /usr/bin/pip3 /usr/bin/pip
-# fi
-
-# echo ""
-# echo "Step 3: Removing externally-managed-environment restriction..."
-# rm -f /usr/lib/python*/EXTERNALLY-MANAGED
+# Colors for output
+GREEN='\033[0;32m'
+BLUE='\033[0;34m'
+YELLOW='\033[1;33m'
+NC='\033[0m' # No Color
 
 echo ""
-echo "Step 4: Upgrading pip..."
+echo -e "${BLUE}Step 1: Upgrading pip...${NC}"
 python3 -m pip install --upgrade pip --break-system-packages 2>/dev/null || true
 
-# echo ""
-# echo "Step 5: Uninstalling old PyTorch (if exists)..."
-# pip3 uninstall -y torch torchvision torchaudio 2>/dev/null || true
-
-# echo ""
-# echo "Step 6: Installing PyTorch 2.5+ with CUDA 12.1 for RTX 5090..."
-# pip3 install torch>=2.5.0 torchvision>=0.20.0 --index-url https://download.pytorch.org/whl/cu121 --break-system-packages
-
 echo ""
-echo "Step 7: Installing other requirements..."
+echo -e "${BLUE}Step 2: Installing Python requirements...${NC}"
 pip3 install -r requirements.txt
 
 echo ""
-echo "Step 8: Installing DiffSynth package..."
+echo -e "${BLUE}Step 3: Installing DiffSynth package...${NC}"
 pip3 install -e .
 
 echo ""
-echo "Step 9: Downloading models..."
+echo -e "${BLUE}Step 4: Downloading models...${NC}"
 python3 download_models.py
 
 echo ""
-echo "=================================="
-echo "Starting Streamlit App..."
-echo "=================================="
-streamlit run apps/streamlit/DiffSynth_Studio.py
+echo -e "${BLUE}Step 5: Installing Node.js dependencies...${NC}"
+cd apps/web
+if [ ! -d "node_modules" ]; then
+    echo "Installing npm packages (this may take a few minutes)..."
+    npm install
+else
+    echo "Node modules already installed, skipping..."
+fi
+cd ../..
+
+echo ""
+echo "=========================================="
+echo -e "${GREEN}Starting All Services...${NC}"
+echo "=========================================="
+
+# Function to cleanup background processes on exit
+cleanup() {
+    echo ""
+    echo "Shutting down services..."
+    kill $(jobs -p) 2>/dev/null
+    exit
+}
+
+trap cleanup SIGINT SIGTERM
+
+# Start FastAPI backend
+echo ""
+echo -e "${YELLOW}🚀 Starting FastAPI Backend on port 8000...${NC}"
+cd /workspace/DiffSynth-Studio
+python3 -m uvicorn apps.api.main:app --host 0.0.0.0 --port 8000 --reload &
+FASTAPI_PID=$!
+
+# Wait for FastAPI to start
+sleep 3
+
+# Start React frontend
+echo -e "${YELLOW}⚛️  Starting React Frontend on port 3000...${NC}"
+cd apps/web
+npm run dev &
+REACT_PID=$!
+
+# Wait for React to start
+sleep 3
+
+# Start Streamlit
+# echo -e "${YELLOW}📊 Starting Streamlit on port 8501...${NC}"
+# cd /workspace/DiffSynth-Studio
+# streamlit run apps/streamlit/DiffSynth_Studio.py &
+# STREAMLIT_PID=$!
+
+echo ""
+echo "=========================================="
+echo -e "${GREEN}✅ All Services Started Successfully!${NC}"
+echo "=========================================="
+echo ""
+echo -e "${GREEN}🎨 React Web App:${NC}      http://localhost:3000"
+echo -e "${GREEN}⚡ FastAPI Backend:${NC}    http://localhost:8000"
+echo -e "${GREEN}📚 API Docs:${NC}           http://localhost:8000/docs"
+# echo -e "${GREEN}📊 Streamlit:${NC}          http://localhost:8501"
+echo ""
+echo "=========================================="
+echo -e "${YELLOW}Press Ctrl+C to stop all services${NC}"
+echo "=========================================="
+
+# Wait for all background processes
+wait
