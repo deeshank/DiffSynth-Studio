@@ -7,6 +7,7 @@ from pydantic import BaseModel, Field
 from typing import Optional, List
 import torch
 import io
+import os
 import base64
 import numpy as np
 from PIL import Image
