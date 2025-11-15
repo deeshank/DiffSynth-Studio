@@ -57,8 +57,8 @@ def get_flux_pipeline():
         if not os.path.exists(f"{model_path}/flux1-dev.safetensors"):
             raise HTTPException(status_code=404, detail="FLUX model not found. Please download it first.")
         
-        print("Loading FLUX model to CPU first...")
-        model_manager = ModelManager(torch_dtype=torch.bfloat16, device="cpu")
+        print("Loading FLUX model...")
+        model_manager = ModelManager(torch_dtype=torch.bfloat16, device="cuda")
         model_manager.load_models([
             f"{model_path}/text_encoder/model.safetensors",
             f"{model_path}/text_encoder_2",
