@@ -2,10 +2,29 @@
 
 # DiffSynth-Studio Bootstrap Script
 
-echo "Installing requirements..."
-pip install -r requirements.txt
+set -e  # Exit on error
 
-echo "Starting DiffSynth-Studio Streamlit App..."
+echo "=================================="
+echo "DiffSynth-Studio Bootstrap"
+echo "=================================="
 
-# Run Streamlit app
+# Ensure we're in the correct directory
+cd /workspace/DiffSynth-Studio
+
+echo ""
+echo "Step 1: Installing requirements..."
+pip install -q -r requirements.txt
+
+echo ""
+echo "Step 2: Installing DiffSynth package..."
+pip install -q -e .
+
+echo ""
+echo "Step 3: Downloading models..."
+python download_models.py
+
+echo ""
+echo "=================================="
+echo "Starting Streamlit App..."
+echo "=================================="
 streamlit run apps/streamlit/DiffSynth_Studio.py
