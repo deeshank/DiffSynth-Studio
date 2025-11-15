@@ -42,11 +42,20 @@ class ImageResponse(BaseModel):
 def get_pipeline():
     """Get or create SDXL pipeline (cached)"""
     if "sdxl_pipeline" not in _model_cache:
+        # Unload FLUX if loaded to free VRAM
+        if "flux_pipeline" in _model_cache:
+            print("Unloading FLUX to free VRAM for SDXL...")
+            del _model_cache["flux_pipeline"]
+            torch.cuda.empty_cache()
+            torch.cuda.synchronize()
+        
+        print("Loading SDXL model...")
         model_path = "models/stable_diffusion_xl/sd_xl_base_1.0.safetensors"
         model_manager = ModelManager()
         model_manager.load_model(model_path)
         pipeline = SDXLImagePipeline.from_model_manager(model_manager)
         _model_cache["sdxl_pipeline"] = pipeline
+        print("SDXL model loaded successfully")
     return _model_cache["sdxl_pipeline"]
 
 def image_to_base64(image: Image.Image) -> str:

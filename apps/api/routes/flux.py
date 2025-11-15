@@ -40,12 +40,20 @@ class ImageResponse(BaseModel):
 def get_flux_pipeline():
     """Get or create FLUX pipeline (cached)"""
     if "flux_pipeline" not in _model_cache:
+        # Unload SDXL if loaded to free VRAM
+        if "sdxl_pipeline" in _model_cache:
+            print("Unloading SDXL to free VRAM for FLUX...")
+            del _model_cache["sdxl_pipeline"]
+            torch.cuda.empty_cache()
+            torch.cuda.synchronize()
+        
         model_path = "models/FLUX/FLUX.1-dev"
         
         # Check if model exists
         if not os.path.exists(f"{model_path}/flux1-dev.safetensors"):
             raise HTTPException(status_code=404, detail="FLUX model not found. Please download it first.")
         
+        print("Loading FLUX model...")
         model_manager = ModelManager(torch_dtype=torch.bfloat16)
         model_manager.load_models([
             f"{model_path}/text_encoder/model.safetensors",
@@ -55,11 +63,7 @@ def get_flux_pipeline():
         ])
         pipeline = FluxImagePipeline.from_model_manager(model_manager)
         _model_cache["flux_pipeline"] = pipeline
-        
-        # Unload SDXL if loaded
-        if "sdxl_pipeline" in _model_cache:
-            del _model_cache["sdxl_pipeline"]
-            torch.cuda.empty_cache()
+        print("FLUX model loaded successfully")
     
     return _model_cache["flux_pipeline"]
 
