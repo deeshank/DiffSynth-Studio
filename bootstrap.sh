@@ -44,11 +44,11 @@ python3 -m pip install --upgrade pip --break-system-packages 2>/dev/null || true
 
 echo ""
 echo "Step 7: Installing other requirements..."
-pip3 install -r requirements.txt --break-system-packages
+pip3 install -r requirements.txt
 
 echo ""
 echo "Step 8: Installing DiffSynth package..."
-pip3 install -e . --break-system-packages
+pip3 install -e .
 
 echo ""
 echo "Step 9: Downloading models..."
