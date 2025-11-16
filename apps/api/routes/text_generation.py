@@ -101,13 +101,22 @@ async def generate_text(request: TextGenerateRequest):
     try:
         model, tokenizer = get_text_model()
         
-        # Tokenize input
-        inputs = tokenizer(request.prompt, return_tensors="pt").to(model.device)
+        # Tokenize input with proper attention mask
+        inputs = tokenizer(
+            request.prompt, 
+            return_tensors="pt",
+            padding=True,
+            truncation=True,
+            max_length=2048
+        )
+        input_ids = inputs.input_ids.to(model.device)
+        attention_mask = inputs.attention_mask.to(model.device)
         
         # Generate
         with torch.no_grad():
             outputs = model.generate(
-                **inputs,
+                input_ids=input_ids,
+                attention_mask=attention_mask,
                 max_new_tokens=request.max_length,
                 temperature=request.temperature,
                 top_p=request.top_p,
@@ -155,13 +164,22 @@ async def chat(request: ChatRequest):
         
         conversation += "Assistant:"
         
-        # Tokenize
-        inputs = tokenizer(conversation, return_tensors="pt").to(model.device)
+        # Tokenize with proper attention mask
+        inputs = tokenizer(
+            conversation,
+            return_tensors="pt",
+            padding=True,
+            truncation=True,
+            max_length=2048
+        )
+        input_ids = inputs.input_ids.to(model.device)
+        attention_mask = inputs.attention_mask.to(model.device)
         
         # Generate
         with torch.no_grad():
             outputs = model.generate(
-                **inputs,
+                input_ids=input_ids,
+                attention_mask=attention_mask,
                 max_new_tokens=request.max_length,
                 temperature=request.temperature,
                 top_p=request.top_p,
