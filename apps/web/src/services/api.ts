@@ -28,8 +28,14 @@ export interface TransformRequest extends GenerateRequest {
   denoising_strength?: number
 }
 
+export interface ImageData {
+  base64: string
+  url: string
+  filename: string
+}
+
 export interface ImageResponse {
-  images: string[]
+  images: ImageData[]
   seed: number
   generation_time: number
 }

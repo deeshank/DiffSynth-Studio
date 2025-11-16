@@ -10,6 +10,8 @@ import io
 import base64
 import numpy as np
 from PIL import Image
+import os
+import uuid
 
 from diffsynth.models import ModelManager
 from diffsynth.pipelines import SDXLImagePipeline
@@ -18,6 +20,10 @@ router = APIRouter()
 
 # Global model cache
 _model_cache = {}
+
+# Output directory for saved images
+OUTPUT_DIR = "outputs/images"
+os.makedirs(OUTPUT_DIR, exist_ok=True)
 
 class GenerateRequest(BaseModel):
     """Request model for text-to-image generation"""
@@ -33,9 +39,15 @@ class GenerateRequest(BaseModel):
     cfg_scale: float = Field(default=7.5, ge=1.0, le=15.0, description="CFG scale")
     seed: Optional[int] = Field(default=None, description="Random seed (optional)")
 
+class ImageData(BaseModel):
+    """Single image data"""
+    base64: str = Field(..., description="Base64 encoded image")
+    url: str = Field(..., description="Shareable URL to the saved image")
+    filename: str = Field(..., description="Filename of the saved image")
+
 class ImageResponse(BaseModel):
     """Response model for generated images"""
-    images: List[str] = Field(..., description="Base64 encoded images")
+    images: List[ImageData] = Field(..., description="Generated images with URLs")
     seed: int = Field(..., description="Seed used for generation")
     generation_time: float = Field(..., description="Generation time in seconds")
 
@@ -62,12 +74,30 @@ def get_pipeline():
         print("SDXL model loaded successfully")
     return _model_cache["sdxl_pipeline"]
 
-def image_to_base64(image: Image.Image) -> str:
-    """Convert PIL Image to base64 string"""
+def save_and_encode_image(image: Image.Image, model_name: str = "sdxl") -> ImageData:
+    """Save image to disk and return both base64 and URL"""
+    # Generate unique filename
+    image_id = str(uuid.uuid4())
+    filename = f"{model_name}_{image_id}.png"
+    filepath = os.path.join(OUTPUT_DIR, filename)
+    
+    # Save to disk
+    image.save(filepath, format="PNG")
+    
+    # Convert to base64
     buffered = io.BytesIO()
     image.save(buffered, format="PNG")
     img_str = base64.b64encode(buffered.getvalue()).decode()
-    return f"data:image/png;base64,{img_str}"
+    base64_data = f"data:image/png;base64,{img_str}"
+    
+    # Create shareable URL
+    url = f"/images/{filename}"
+    
+    return ImageData(
+        base64=base64_data,
+        url=url,
+        filename=filename
+    )
 
 @router.post("/generate", response_model=ImageResponse)
 async def generate_images(request: GenerateRequest):
@@ -101,9 +131,9 @@ async def generate_images(request: GenerateRequest):
                 width=request.width
             )
             
-            # Convert to base64
-            img_base64 = image_to_base64(image)
-            images.append(img_base64)
+            # Save and encode image
+            image_data = save_and_encode_image(image, "sdxl")
+            images.append(image_data)
         
         generation_time = time.time() - start_time
         
@@ -165,9 +195,9 @@ async def transform_image(
                 denoising_strength=denoising_strength
             )
             
-            # Convert to base64
-            img_base64 = image_to_base64(output_image)
-            images.append(img_base64)
+            # Save and encode image
+            image_data = save_and_encode_image(output_image, "sdxl_img2img")
+            images.append(image_data)
         
         generation_time = time.time() - start_time
         

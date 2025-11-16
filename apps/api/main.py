@@ -9,6 +9,10 @@ import os
 
 from apps.api.routes import sdxl, flux, health, models
 
+# Create output directory for saved images
+OUTPUT_DIR = "outputs/images"
+os.makedirs(OUTPUT_DIR, exist_ok=True)
+
 # Create FastAPI app
 app = FastAPI(
     title="Dee Studio API",
@@ -35,6 +39,9 @@ app.include_router(health.router, prefix="/api", tags=["Health"])
 app.include_router(models.router, prefix="/api/models", tags=["Models"])
 app.include_router(sdxl.router, prefix="/api/sdxl", tags=["SDXL"])
 app.include_router(flux.router, prefix="/api/flux", tags=["FLUX"])
+
+# Serve saved images as static files
+app.mount("/images", StaticFiles(directory=OUTPUT_DIR), name="images")
 
 # Serve React build in production (optional)
 if os.path.exists("apps/web/dist"):

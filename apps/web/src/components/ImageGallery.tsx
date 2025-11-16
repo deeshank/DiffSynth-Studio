@@ -48,12 +48,16 @@ function ImageGallery({ images, generationTime }: ImageGalleryProps) {
     })
   }
 
-  const handleShare = (imageData: string, index: number) => {
-    // Copy base64 data URL to clipboard
-    navigator.clipboard.writeText(imageData).then(() => {
+  const handleShare = (img: GeneratedImage, index: number) => {
+    // Create full shareable URL
+    const baseUrl = window.location.origin
+    const shareUrl = `${baseUrl}${img.url}`
+    
+    // Copy shareable URL to clipboard
+    navigator.clipboard.writeText(shareUrl).then(() => {
       toast({
         title: 'Link Copied!',
-        description: 'Image data URL copied to clipboard. Paste it in a browser to view.',
+        description: 'Shareable link copied to clipboard. Anyone can view this image!',
         status: 'success',
         duration: 3000,
         isClosable: true,
@@ -192,7 +196,7 @@ function ImageGallery({ images, generationTime }: ImageGalleryProps) {
                       size="sm"
                       variant="outline"
                       colorScheme="brand"
-                      onClick={() => handleShare(img.data, index)}
+                      onClick={() => handleShare(img, index)}
                       flex={1}
                     >
                       Share Link

@@ -22,6 +22,8 @@ import ImageGallery from './ImageGallery'
 
 export interface GeneratedImage {
   data: string
+  url: string
+  filename: string
   seed: number
   timestamp: number
 }
@@ -62,9 +64,11 @@ function ImageGenerator() {
     }
   }, [modelsConfig, selectedModel])
 
-  const handleImagesGenerated = (images: string[], seed: number, time: number) => {
+  const handleImagesGenerated = (images: any[], seed: number, time: number) => {
     const newImages = images.map((img) => ({
-      data: img,
+      data: img.base64,
+      url: img.url,
+      filename: img.filename,
       seed,
       timestamp: Date.now(),
     }))

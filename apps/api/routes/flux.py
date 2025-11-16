@@ -11,6 +11,7 @@ import os
 import base64
 import numpy as np
 from PIL import Image
+import uuid
 
 from diffsynth.models import ModelManager
 from diffsynth.pipelines import FluxImagePipeline
@@ -19,6 +20,10 @@ router = APIRouter()
 
 # Global model cache
 _model_cache = {}
+
+# Output directory for saved images
+OUTPUT_DIR = "outputs/images"
+os.makedirs(OUTPUT_DIR, exist_ok=True)
 
 class FluxGenerateRequest(BaseModel):
     """Request model for FLUX text-to-image generation"""
@@ -33,9 +38,15 @@ class FluxGenerateRequest(BaseModel):
     seed: Optional[int] = Field(default=None, description="Random seed (optional)")
     tiled: bool = Field(default=False, description="Enable tiled generation for large images")
 
+class ImageData(BaseModel):
+    """Single image data"""
+    base64: str = Field(..., description="Base64 encoded image")
+    url: str = Field(..., description="Shareable URL to the saved image")
+    filename: str = Field(..., description="Filename of the saved image")
+
 class ImageResponse(BaseModel):
     """Response model for generated images"""
-    images: List[str] = Field(..., description="Base64 encoded images")
+    images: List[ImageData] = Field(..., description="Generated images with URLs")
     seed: int = Field(..., description="Seed used for generation")
     generation_time: float = Field(..., description="Generation time in seconds")
 
@@ -93,12 +104,30 @@ def get_flux_pipeline():
     
     return _model_cache["flux_pipeline"]
 
-def image_to_base64(image: Image.Image) -> str:
-    """Convert PIL Image to base64 string"""
+def save_and_encode_image(image: Image.Image, model_name: str = "flux") -> ImageData:
+    """Save image to disk and return both base64 and URL"""
+    # Generate unique filename
+    image_id = str(uuid.uuid4())
+    filename = f"{model_name}_{image_id}.png"
+    filepath = os.path.join(OUTPUT_DIR, filename)
+    
+    # Save to disk
+    image.save(filepath, format="PNG")
+    
+    # Convert to base64
     buffered = io.BytesIO()
     image.save(buffered, format="PNG")
     img_str = base64.b64encode(buffered.getvalue()).decode()
-    return f"data:image/png;base64,{img_str}"
+    base64_data = f"data:image/png;base64,{img_str}"
+    
+    # Create shareable URL
+    url = f"/images/{filename}"
+    
+    return ImageData(
+        base64=base64_data,
+        url=url,
+        filename=filename
+    )
 
 @router.post("/generate", response_model=ImageResponse)
 async def generate_images(request: FluxGenerateRequest):
@@ -143,10 +172,10 @@ async def generate_images(request: FluxGenerateRequest):
                 cfg_scale=request.cfg_scale
             )
             
-            # Convert to base64
-            print(f"Converting image {i+1} to base64...")
-            img_base64 = image_to_base64(image)
-            images.append(img_base64)
+            # Save and encode image
+            print(f"Saving and encoding image {i+1}...")
+            image_data = save_and_encode_image(image, "flux")
+            images.append(image_data)
         
         generation_time = time.time() - start_time
         print(f"Generation complete in {generation_time:.2f}s")
@@ -222,9 +251,9 @@ async def transform_image(
                 cfg_scale=cfg_scale
             )
             
-            # Convert to base64
-            img_base64 = image_to_base64(output_image)
-            images.append(img_base64)
+            # Save and encode image
+            image_data = save_and_encode_image(output_image, "flux_img2img")
+            images.append(image_data)
         
         generation_time = time.time() - start_time
         
