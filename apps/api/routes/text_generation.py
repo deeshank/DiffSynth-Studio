@@ -75,8 +75,12 @@ def get_text_model():
                 device_map="cuda",
                 low_cpu_mem_usage=True,
                 trust_remote_code=True,
-                use_cache=True
+                use_cache=True,
+                attn_implementation="eager"
             )
+            
+            # Force eager attention to avoid rotary embedding issues
+            model.config.attn_implementation = "eager"
             
             _model_cache["text_model"] = model
             _model_cache["text_tokenizer"] = tokenizer
