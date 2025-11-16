@@ -357,12 +357,8 @@ preset_models_on_huggingface = {
     "FLUX_LoRA_NSFW_v2": [
         ("xey/sldr_flux_nsfw_v2-studio", "sldr_flux_nsfw_v2-studio.safetensors", "models/lora/flux"),
     ],
-    "NSFW_Flash_Text": [
-        ("UnfilteredAI/NSFW-flash", "model.safetensors", "models/text_generation/NSFW-flash"),
-        ("UnfilteredAI/NSFW-flash", "config.json", "models/text_generation/NSFW-flash"),
-        ("UnfilteredAI/NSFW-flash", "tokenizer.json", "models/text_generation/NSFW-flash"),
-        ("UnfilteredAI/NSFW-flash", "tokenizer_config.json", "models/text_generation/NSFW-flash"),
-        ("UnfilteredAI/NSFW-flash", "special_tokens_map.json", "models/text_generation/NSFW-flash"),
+    "MistralRP_NSFW_7B": [
+        ("Ttimofeyka/MistralRP-Noromaid-NSFW-Mistral-7B-GGUF", "mistralrp-noromaid-nsfw-mistral-7b.Q4_K_M.gguf", "models/text_generation/MistralRP-NSFW"),
     ],
     "InstantX/FLUX.1-dev-IP-Adapter": {
         "file_list": [
@@ -840,7 +836,7 @@ Preset_model_id: TypeAlias = Literal[
     "FLUX.1-dev",
     "FLUX.1-schnell",
     "FLUX_LoRA_NSFW_v2",
-    "NSFW_Flash_Text",
+    "MistralRP_NSFW_7B",
     "InstantX/FLUX.1-dev-Controlnet-Union-alpha",
     "jasperai/Flux.1-dev-Controlnet-Depth",
     "jasperai/Flux.1-dev-Controlnet-Surface-Normals",

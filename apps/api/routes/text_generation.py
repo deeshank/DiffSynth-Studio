@@ -49,9 +49,9 @@ def get_text_model():
     """Get or create text generation model (cached)"""
     if "text_model" not in _model_cache:
         try:
-            from transformers import AutoModelForCausalLM, AutoTokenizer
+            from llama_cpp import Llama
             
-            model_path = "models/text_generation/NSFW-flash"
+            model_path = "models/text_generation/MistralRP-NSFW/mistralrp-noromaid-nsfw-mistral-7b.Q4_K_M.gguf"
             
             # Check if model exists
             if not os.path.exists(model_path):
@@ -62,40 +62,28 @@ def get_text_model():
             
             print(f"Loading text generation model from {model_path}...")
             
-            # Load tokenizer and model
-            tokenizer = AutoTokenizer.from_pretrained(model_path)
-            
-            # Set padding token if not set
-            if tokenizer.pad_token is None:
-                tokenizer.pad_token = tokenizer.eos_token
-            
-            model = AutoModelForCausalLM.from_pretrained(
-                model_path,
-                dtype=torch.float16,
-                device_map="cuda",
-                low_cpu_mem_usage=True,
-                trust_remote_code=True,
-                use_cache=True,
-                attn_implementation="eager"
+            # Load GGUF model with llama-cpp-python
+            model = Llama(
+                model_path=model_path,
+                n_ctx=4096,  # Context window
+                n_gpu_layers=-1,  # Offload all layers to GPU
+                n_threads=8,
+                verbose=False
             )
             
-            # Force eager attention to avoid rotary embedding issues
-            model.config.attn_implementation = "eager"
-            
             _model_cache["text_model"] = model
-            _model_cache["text_tokenizer"] = tokenizer
             
             print("Text generation model loaded successfully")
             
         except ImportError:
             raise HTTPException(
                 status_code=500,
-                detail="transformers library not installed. Install with: pip install transformers"
+                detail="llama-cpp-python not installed. Install with: pip install llama-cpp-python"
             )
         except Exception as e:
             raise HTTPException(status_code=500, detail=f"Error loading model: {str(e)}")
     
-    return _model_cache["text_model"], _model_cache["text_tokenizer"]
+    return _model_cache["text_model"]
 
 @router.post("/generate", response_model=TextResponse)
 async def generate_text(request: TextGenerateRequest):
@@ -103,41 +91,21 @@ async def generate_text(request: TextGenerateRequest):
     Generate text from a prompt
     """
     try:
-        model, tokenizer = get_text_model()
+        model = get_text_model()
         
-        # Tokenize input with proper attention mask
-        inputs = tokenizer(
-            request.prompt, 
-            return_tensors="pt",
-            padding=True,
-            truncation=True,
-            max_length=2048
+        # Generate using llama-cpp-python
+        output = model(
+            request.prompt,
+            max_tokens=request.max_length,
+            temperature=request.temperature,
+            top_p=request.top_p,
+            top_k=request.top_k,
+            repeat_penalty=request.repetition_penalty,
+            stop=["User:", "\n\n\n"],
+            echo=False
         )
-        input_ids = inputs.input_ids.to(model.device)
-        attention_mask = inputs.attention_mask.to(model.device)
         
-        # Generate
-        with torch.no_grad():
-            outputs = model.generate(
-                input_ids=input_ids,
-                attention_mask=attention_mask,
-                max_new_tokens=request.max_length,
-                temperature=request.temperature,
-                top_p=request.top_p,
-                top_k=request.top_k,
-                repetition_penalty=request.repetition_penalty,
-                do_sample=True,
-                pad_token_id=tokenizer.pad_token_id,
-                eos_token_id=tokenizer.eos_token_id,
-                use_cache=True
-            )
-        
-        # Decode
-        generated_text = tokenizer.decode(outputs[0], skip_special_tokens=True)
-        
-        # Remove the prompt from the output
-        if generated_text.startswith(request.prompt):
-            generated_text = generated_text[len(request.prompt):].strip()
+        generated_text = output['choices'][0]['text'].strip()
         
         return TextResponse(
             text=generated_text,
@@ -156,7 +124,7 @@ async def chat(request: ChatRequest):
     Chat-style conversation with message history
     """
     try:
-        model, tokenizer = get_text_model()
+        model = get_text_model()
         
         # Build conversation prompt
         conversation = ""
@@ -168,45 +136,19 @@ async def chat(request: ChatRequest):
         
         conversation += "Assistant:"
         
-        # Tokenize with proper attention mask
-        inputs = tokenizer(
+        # Generate using llama-cpp-python
+        output = model(
             conversation,
-            return_tensors="pt",
-            padding=True,
-            truncation=True,
-            max_length=2048
+            max_tokens=request.max_length,
+            temperature=request.temperature,
+            top_p=request.top_p,
+            top_k=request.top_k,
+            repeat_penalty=request.repetition_penalty,
+            stop=["User:", "\n\n\n"],
+            echo=False
         )
-        input_ids = inputs.input_ids.to(model.device)
-        attention_mask = inputs.attention_mask.to(model.device)
         
-        # Generate
-        with torch.no_grad():
-            outputs = model.generate(
-                input_ids=input_ids,
-                attention_mask=attention_mask,
-                max_new_tokens=request.max_length,
-                temperature=request.temperature,
-                top_p=request.top_p,
-                top_k=request.top_k,
-                repetition_penalty=request.repetition_penalty,
-                do_sample=True,
-                pad_token_id=tokenizer.pad_token_id,
-                eos_token_id=tokenizer.eos_token_id,
-                use_cache=True
-            )
-        
-        # Decode
-        generated_text = tokenizer.decode(outputs[0], skip_special_tokens=True)
-        
-        # Extract assistant's response
-        if "Assistant:" in generated_text:
-            parts = generated_text.split("Assistant:")
-            assistant_response = parts[-1].strip()
-            # Stop at next "User:" if present
-            if "User:" in assistant_response:
-                assistant_response = assistant_response.split("User:")[0].strip()
-        else:
-            assistant_response = generated_text.strip()
+        assistant_response = output['choices'][0]['text'].strip()
         
         # Create response message
         response_message = Message(role="assistant", content=assistant_response)
@@ -228,12 +170,12 @@ async def chat(request: ChatRequest):
 @router.get("/config")
 async def get_text_config():
     """Get text generation configuration"""
-    model_path = "models/text_generation/NSFW-flash"
+    model_path = "models/text_generation/MistralRP-NSFW/mistralrp-noromaid-nsfw-mistral-7b.Q4_K_M.gguf"
     model_available = os.path.exists(model_path)
     
     return {
         "available": model_available,
-        "model_name": "NSFW-flash",
+        "model_name": "MistralRP-NSFW-7B",
         "model_path": model_path,
         "parameters": {
             "max_length": {

@@ -24,8 +24,8 @@ MODELS_TO_DOWNLOAD = [
     # FLUX LoRA - NSFW v2 (~500MB)
     "FLUX_LoRA_NSFW_v2",
     
-    # Text Generation Model (~3GB)
-    "NSFW_Flash_Text",
+    # Text Generation Model - MistralRP NSFW 7B (~4GB, GGUF Q4)
+    "MistralRP_NSFW_7B",
     
     # Stable Diffusion XL Turbo (fast generation, ~6.5GB)
     # "StableDiffusionXL_Turbo",
@@ -56,7 +56,7 @@ def check_model_exists(model_name):
         "AnimateDiff_xl_beta": "models/AnimateDiff/mm_sdxl_v10_beta.ckpt",
         "FLUX.1-dev": "models/FLUX/FLUX.1-dev/flux1-dev.safetensors",
         "FLUX_LoRA_NSFW_v2": "models/lora/flux/sldr_flux_nsfw_v2-studio.safetensors",
-        "NSFW_Flash_Text": "models/text_generation/NSFW-flash/model.safetensors",
+        "MistralRP_NSFW_7B": "models/text_generation/MistralRP-NSFW/mistralrp-noromaid-nsfw-mistral-7b.Q4_K_M.gguf",
     }
     
     if model_name in model_dirs:
