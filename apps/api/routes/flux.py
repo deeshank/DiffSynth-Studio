@@ -92,12 +92,12 @@ def get_flux_pipeline():
         
         print("Loading FLUX model with new pipeline...")
         
-        # Build model configs (base FLUX only) - use 'path' for local files
+        # Build model configs with CPU offload for low VRAM
         model_configs = [
-            ModelConfig(path=f"{model_path}/text_encoder/model.safetensors"),
-            ModelConfig(path=f"{model_path}/text_encoder_2"),
-            ModelConfig(path=f"{model_path}/ae.safetensors"),
-            ModelConfig(path=f"{model_path}/flux1-dev.safetensors"),
+            ModelConfig(path=f"{model_path}/text_encoder/model.safetensors", offload_device="cpu"),
+            ModelConfig(path=f"{model_path}/text_encoder_2", offload_device="cpu"),
+            ModelConfig(path=f"{model_path}/ae.safetensors", offload_device="cpu"),
+            ModelConfig(path=f"{model_path}/flux1-dev.safetensors", offload_device="cpu"),
         ]
         
         # Load pipeline with new API
@@ -107,17 +107,19 @@ def get_flux_pipeline():
             model_configs=model_configs
         )
         
+        # Enable VRAM management for efficient memory usage
+        pipeline.enable_vram_management()
+        print("VRAM management enabled")
+        
         # Load and apply LoRA if available
         if lora_available:
             print(f"LoRA found at {lora_path}, loading...")
             pipeline.enable_lora_magic()
-            lora_config = ModelConfig(path=lora_path)
+            lora_config = ModelConfig(path=lora_path, offload_device="cpu")
             pipeline.load_lora(pipeline.dit, lora_config, hotload=True)
             print("LoRA loaded and applied to pipeline")
         
-        # Enable CPU offload for VRAM efficiency
-        pipeline.enable_cpu_offload()
-        print("FLUX pipeline ready with CPU offload enabled")
+        print("FLUX pipeline ready with VRAM management enabled")
         
         _model_cache["flux_pipeline"] = pipeline
         _model_cache["lora_available"] = lora_available
