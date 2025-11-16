@@ -92,12 +92,12 @@ def get_flux_pipeline():
         
         print("Loading FLUX model with new pipeline...")
         
-        # Build model configs (base FLUX only)
+        # Build model configs (base FLUX only) - use 'path' for local files
         model_configs = [
-            ModelConfig(model_id=f"{model_path}/text_encoder/model.safetensors"),
-            ModelConfig(model_id=f"{model_path}/text_encoder_2"),
-            ModelConfig(model_id=f"{model_path}/ae.safetensors"),
-            ModelConfig(model_id=f"{model_path}/flux1-dev.safetensors"),
+            ModelConfig(path=f"{model_path}/text_encoder/model.safetensors"),
+            ModelConfig(path=f"{model_path}/text_encoder_2"),
+            ModelConfig(path=f"{model_path}/ae.safetensors"),
+            ModelConfig(path=f"{model_path}/flux1-dev.safetensors"),
         ]
         
         # Load pipeline with new API
@@ -111,7 +111,7 @@ def get_flux_pipeline():
         if lora_available:
             print(f"LoRA found at {lora_path}, loading...")
             pipeline.enable_lora_magic()
-            lora_config = ModelConfig(model_id=lora_path)
+            lora_config = ModelConfig(path=lora_path)
             pipeline.load_lora(pipeline.dit, lora_config, hotload=True)
             print("LoRA loaded and applied to pipeline")
         
