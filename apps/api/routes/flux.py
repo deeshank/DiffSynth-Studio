@@ -13,8 +13,7 @@ import numpy as np
 from PIL import Image
 import uuid
 
-from diffsynth.models import ModelManager
-from diffsynth.pipelines import FluxImagePipeline
+from diffsynth.pipelines.flux_image_new import FluxImagePipeline, ModelConfig
 
 router = APIRouter()
 
@@ -87,19 +86,41 @@ def get_flux_pipeline():
         if not os.path.exists(f"{model_path}/flux1-dev.safetensors"):
             raise HTTPException(status_code=404, detail="FLUX model not found. Please download it first.")
         
-        print("Loading FLUX model to CPU (to save VRAM)...")
-        model_manager = ModelManager(torch_dtype=torch.bfloat16, device="cpu")
-        model_manager.load_models([
-            f"{model_path}/text_encoder/model.safetensors",
-            f"{model_path}/text_encoder_2",
-            f"{model_path}/ae.safetensors",
-            f"{model_path}/flux1-dev.safetensors",
-        ])
-        print("Creating FLUX pipeline with CPU offload...")
-        pipeline = FluxImagePipeline.from_model_manager(model_manager, device="cuda")
+        # Check if LoRA exists
+        lora_path = "models/lora/flux/sldr_flux_nsfw_v2-studio.safetensors"
+        lora_available = os.path.exists(lora_path)
+        
+        print("Loading FLUX model with new pipeline...")
+        
+        # Build model configs (base FLUX only)
+        model_configs = [
+            ModelConfig(model_id=f"{model_path}/text_encoder/model.safetensors"),
+            ModelConfig(model_id=f"{model_path}/text_encoder_2"),
+            ModelConfig(model_id=f"{model_path}/ae.safetensors"),
+            ModelConfig(model_id=f"{model_path}/flux1-dev.safetensors"),
+        ]
+        
+        # Load pipeline with new API
+        pipeline = FluxImagePipeline.from_pretrained(
+            torch_dtype=torch.bfloat16,
+            device="cuda",
+            model_configs=model_configs
+        )
+        
+        # Load and apply LoRA if available
+        if lora_available:
+            print(f"LoRA found at {lora_path}, loading...")
+            pipeline.enable_lora_magic()
+            lora_config = ModelConfig(model_id=lora_path)
+            pipeline.load_lora(pipeline.dit, lora_config, hotload=True)
+            print("LoRA loaded and applied to pipeline")
+        
+        # Enable CPU offload for VRAM efficiency
         pipeline.enable_cpu_offload()
         print("FLUX pipeline ready with CPU offload enabled")
+        
         _model_cache["flux_pipeline"] = pipeline
+        _model_cache["lora_available"] = lora_available
         print("FLUX model loaded successfully")
     
     return _model_cache["flux_pipeline"]

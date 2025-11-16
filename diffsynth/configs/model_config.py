@@ -354,6 +354,9 @@ preset_models_on_huggingface = {
         ("black-forest-labs/FLUX.1-dev", "ae.safetensors", "models/FLUX/FLUX.1-dev"),
         ("black-forest-labs/FLUX.1-dev", "flux1-dev.safetensors", "models/FLUX/FLUX.1-dev"),
     ],
+    "FLUX_LoRA_NSFW_v2": [
+        ("xey/sldr_flux_nsfw_v2-studio", "sldr_flux_nsfw_v2-studio.safetensors", "models/lora/flux"),
+    ],
     "InstantX/FLUX.1-dev-IP-Adapter": {
         "file_list": [
             ("InstantX/FLUX.1-dev-IP-Adapter", "ip-adapter.bin", "models/IpAdapter/InstantX/FLUX.1-dev-IP-Adapter"),
@@ -829,6 +832,7 @@ Preset_model_id: TypeAlias = Literal[
     "ControlNet_union_sdxl_promax",
     "FLUX.1-dev",
     "FLUX.1-schnell",
+    "FLUX_LoRA_NSFW_v2",
     "InstantX/FLUX.1-dev-Controlnet-Union-alpha",
     "jasperai/Flux.1-dev-Controlnet-Depth",
     "jasperai/Flux.1-dev-Controlnet-Surface-Normals",
