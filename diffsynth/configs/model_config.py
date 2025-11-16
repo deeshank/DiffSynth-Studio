@@ -358,7 +358,7 @@ preset_models_on_huggingface = {
         ("xey/sldr_flux_nsfw_v2-studio", "sldr_flux_nsfw_v2-studio.safetensors", "models/lora/flux"),
     ],
     "MistralRP_NSFW_7B": [
-        ("Ttimofeyka/MistralRP-Noromaid-NSFW-Mistral-7B-GGUF", "mistralrp-noromaid-nsfw-mistral-7b.Q4_K_M.gguf", "models/text_generation/MistralRP-NSFW"),
+        ("Ttimofeyka/MistralRP-Noromaid-NSFW-Mistral-7B-GGUF", "MistralRP-Noromaid-NSFW-7B-Q5_K_M.gguf", "models/text_generation/MistralRP-NSFW"),
     ],
     "InstantX/FLUX.1-dev-IP-Adapter": {
         "file_list": [

@@ -51,7 +51,7 @@ def get_text_model():
         try:
             from llama_cpp import Llama
             
-            model_path = "models/text_generation/MistralRP-NSFW/mistralrp-noromaid-nsfw-mistral-7b.Q4_K_M.gguf"
+            model_path = "models/text_generation/MistralRP-NSFW/MistralRP-Noromaid-NSFW-7B-Q5_K_M.gguf"
             
             # Check if model exists
             if not os.path.exists(model_path):
@@ -170,7 +170,7 @@ async def chat(request: ChatRequest):
 @router.get("/config")
 async def get_text_config():
     """Get text generation configuration"""
-    model_path = "models/text_generation/MistralRP-NSFW/mistralrp-noromaid-nsfw-mistral-7b.Q4_K_M.gguf"
+    model_path = "models/text_generation/MistralRP-NSFW/MistralRP-Noromaid-NSFW-7B-Q5_K_M.gguf"
     model_available = os.path.exists(model_path)
     
     return {
