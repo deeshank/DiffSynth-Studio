@@ -4,6 +4,16 @@ import axios from 'axios'
 // In production, set VITE_API_URL environment variable
 const API_BASE_URL = import.meta.env.VITE_API_URL || ''
 
+// Export for use in components (e.g., for constructing shareable image URLs)
+export const getApiBaseUrl = () => {
+  // If API_BASE_URL is set (production), use it
+  if (API_BASE_URL) {
+    return API_BASE_URL
+  }
+  // Otherwise, use current origin (works for both dev proxy and production)
+  return window.location.origin
+}
+
 export const api = axios.create({
   baseURL: API_BASE_URL,
   headers: {

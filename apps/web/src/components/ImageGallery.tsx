@@ -19,6 +19,7 @@ import {
 } from '@chakra-ui/react'
 import { FiDownload, FiMaximize2, FiShare2 } from 'react-icons/fi'
 import { GeneratedImage } from './ImageGenerator'
+import { getApiBaseUrl } from '../services/api'
 import { useState } from 'react'
 
 interface ImageGalleryProps {
@@ -49,8 +50,8 @@ function ImageGallery({ images, generationTime }: ImageGalleryProps) {
   }
 
   const handleShare = (img: GeneratedImage, index: number) => {
-    // Create full shareable URL
-    const baseUrl = window.location.origin
+    // Create full shareable URL using API base URL
+    const baseUrl = getApiBaseUrl()
     const shareUrl = `${baseUrl}${img.url}`
     
     // Copy shareable URL to clipboard

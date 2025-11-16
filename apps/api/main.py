@@ -34,19 +34,6 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Include routers
-app.include_router(health.router, prefix="/api", tags=["Health"])
-app.include_router(models.router, prefix="/api/models", tags=["Models"])
-app.include_router(sdxl.router, prefix="/api/sdxl", tags=["SDXL"])
-app.include_router(flux.router, prefix="/api/flux", tags=["FLUX"])
-
-# Serve saved images as static files
-app.mount("/images", StaticFiles(directory=OUTPUT_DIR), name="images")
-
-# Serve React build in production (optional)
-if os.path.exists("apps/web/dist"):
-    app.mount("/", StaticFiles(directory="apps/web/dist", html=True), name="static")
-
 @app.get("/")
 async def root():
     """Root endpoint"""
@@ -56,6 +43,19 @@ async def root():
         "docs": "/docs",
         "health": "/api/health"
     }
+
+# Include routers (must be before static file mounts)
+app.include_router(health.router, prefix="/api", tags=["Health"])
+app.include_router(models.router, prefix="/api/models", tags=["Models"])
+app.include_router(sdxl.router, prefix="/api/sdxl", tags=["SDXL"])
+app.include_router(flux.router, prefix="/api/flux", tags=["FLUX"])
+
+# Serve saved images as static files (must be before React mount)
+app.mount("/images", StaticFiles(directory=OUTPUT_DIR), name="images")
+
+# Serve React build in production (must be LAST - catches all remaining routes)
+if os.path.exists("apps/web/dist"):
+    app.mount("/", StaticFiles(directory="apps/web/dist", html=True), name="static")
 
 if __name__ == "__main__":
     import uvicorn
