@@ -23,11 +23,13 @@ _model_cache = {}
 class FluxGenerateRequest(BaseModel):
     """Request model for FLUX text-to-image generation"""
     prompt: str = Field(..., description="Text prompt for image generation")
+    negative_prompt: str = Field(default="", description="Negative prompt (only works with cfg_scale > 1.0)")
     width: int = Field(default=1024, ge=512, le=2048, description="Image width (must be divisible by 16)")
     height: int = Field(default=1024, ge=512, le=2048, description="Image height (must be divisible by 16)")
     num_images: int = Field(default=1, ge=1, le=4, description="Number of images to generate")
     steps: int = Field(default=28, ge=10, le=50, description="Number of inference steps")
     guidance: float = Field(default=3.5, ge=1.0, le=5.0, description="FLUX guidance (embedded_guidance)")
+    cfg_scale: float = Field(default=1.0, ge=1.0, le=3.0, description="CFG scale (1.0 = disabled)")
     seed: Optional[int] = Field(default=None, description="Random seed (optional)")
     tiled: bool = Field(default=False, description="Enable tiled generation for large images")
 
@@ -132,12 +134,13 @@ async def generate_images(request: FluxGenerateRequest):
             print(f"Generating image {i+1}/{request.num_images}...")
             image = pipeline(
                 prompt=request.prompt,
+                negative_prompt=request.negative_prompt if request.cfg_scale > 1.0 else "",
                 embedded_guidance=request.guidance,
                 num_inference_steps=request.steps,
                 height=request.height,
                 width=request.width,
                 tiled=request.tiled,
-                cfg_scale=1.0  # FLUX default
+                cfg_scale=request.cfg_scale
             )
             
             # Convert to base64
@@ -163,11 +166,13 @@ async def generate_images(request: FluxGenerateRequest):
 @router.post("/transform", response_model=ImageResponse)
 async def transform_image(
     prompt: str = Form(...),
+    negative_prompt: str = Form(default=""),
     width: int = Form(default=1024),
     height: int = Form(default=1024),
     num_images: int = Form(default=1),
     steps: int = Form(default=28),
     guidance: float = Form(default=3.5),
+    cfg_scale: float = Form(default=1.0),
     denoising_strength: float = Form(default=0.75),
     seed: Optional[int] = Form(default=None),
     tiled: bool = Form(default=False),
@@ -206,6 +211,7 @@ async def transform_image(
             
             output_image = pipeline(
                 prompt=prompt,
+                negative_prompt=negative_prompt if cfg_scale > 1.0 else "",
                 embedded_guidance=guidance,
                 num_inference_steps=steps,
                 height=height,
@@ -213,7 +219,7 @@ async def transform_image(
                 input_image=input_image,
                 denoising_strength=denoising_strength,
                 tiled=tiled,
-                cfg_scale=1.0  # FLUX default
+                cfg_scale=cfg_scale
             )
             
             # Convert to base64

@@ -100,6 +100,8 @@ export const transformImage = async (
     if (data.cfg_scale) formData.append('cfg_scale', data.cfg_scale.toString())
   } else if (modelId === 'flux') {
     if (data.guidance) formData.append('guidance', data.guidance.toString())
+    if (data.cfg_scale) formData.append('cfg_scale', data.cfg_scale.toString())
+    if (data.negative_prompt) formData.append('negative_prompt', data.negative_prompt)
     if (data.tiled !== undefined) formData.append('tiled', data.tiled.toString())
   }
   

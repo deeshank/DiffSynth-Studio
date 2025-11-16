@@ -184,6 +184,27 @@ async def get_models_config():
                     "img2img_only": True,
                     "help": "Higher = more changes, Lower = closer to original"
                 },
+                "cfg_scale": {
+                    "type": "number",
+                    "label": "CFG Scale",
+                    "min": 1.0,
+                    "max": 3.0,
+                    "default": 1.0,
+                    "step": 0.1,
+                    "advanced": True,
+                    "help": "Enable classifier-free guidance (1.0 = disabled, 2.0 = recommended if using negative prompt)"
+                },
+                "negative_prompt": {
+                    "type": "text",
+                    "label": "Negative Prompt",
+                    "required": False,
+                    "default": "lowres, bad anatomy, bad hands, text, error, missing fingers, cropped, worst quality, low quality, jpeg artifacts, signature, watermark, username, blurry",
+                    "placeholder": "What to avoid in the image...",
+                    "rows": 3,
+                    "advanced": True,
+                    "collapsible": False,
+                    "help": "Only works when CFG Scale > 1.0"
+                },
                 "tiled": {
                     "type": "boolean",
                     "label": "Tiled Generation",
