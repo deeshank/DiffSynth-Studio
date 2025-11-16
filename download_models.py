@@ -24,6 +24,9 @@ MODELS_TO_DOWNLOAD = [
     # FLUX LoRA - NSFW v2 (~500MB)
     "FLUX_LoRA_NSFW_v2",
     
+    # Text Generation Model (~3GB)
+    "NSFW_Flash_Text",
+    
     # Stable Diffusion XL Turbo (fast generation, ~6.5GB)
     # "StableDiffusionXL_Turbo",
     
@@ -53,6 +56,7 @@ def check_model_exists(model_name):
         "AnimateDiff_xl_beta": "models/AnimateDiff/mm_sdxl_v10_beta.ckpt",
         "FLUX.1-dev": "models/FLUX/FLUX.1-dev/flux1-dev.safetensors",
         "FLUX_LoRA_NSFW_v2": "models/lora/flux/sldr_flux_nsfw_v2-studio.safetensors",
+        "NSFW_Flash_Text": "models/text_generation/NSFW-flash/model.safetensors",
     }
     
     if model_name in model_dirs:

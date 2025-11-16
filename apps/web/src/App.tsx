@@ -1,10 +1,13 @@
-import { Box, Container, Heading, Text, HStack, Badge, useToast } from '@chakra-ui/react'
+import { useState } from 'react'
+import { Box, Container, Heading, Text, HStack, Badge, useToast, Tabs, TabList, TabPanels, Tab, TabPanel } from '@chakra-ui/react'
 import { useQuery } from '@tanstack/react-query'
 import { checkHealth } from './services/api'
 import ImageGenerator from './components/ImageGenerator'
+import TextChat from './components/TextChat'
 
 function App() {
   const toast = useToast()
+  const [activeTab, setActiveTab] = useState(0)
 
   const { data: health, isLoading } = useQuery({
     queryKey: ['health'],
@@ -31,7 +34,7 @@ function App() {
                 🎨 Dee Studio
               </Heading>
               <Text color="gray.500" fontSize="sm">
-                AI Image Generation
+                AI Generation Platform
               </Text>
             </HStack>
             {!isLoading && health && (
@@ -46,15 +49,29 @@ function App() {
       </Box>
 
       {/* Main Content */}
-      <Container maxW="container.xl" py={8}>
-        <ImageGenerator />
+      <Container maxW="container.xl" py={6}>
+        <Tabs colorScheme="brand" index={activeTab} onChange={setActiveTab}>
+          <TabList mb={6}>
+            <Tab>🎨 Image Generation</Tab>
+            <Tab>💬 Text Chat</Tab>
+          </TabList>
+
+          <TabPanels>
+            <TabPanel p={0}>
+              <ImageGenerator />
+            </TabPanel>
+            <TabPanel p={0}>
+              <TextChat />
+            </TabPanel>
+          </TabPanels>
+        </Tabs>
       </Container>
 
       {/* Footer */}
       <Box as="footer" py={6} mt={12} borderTop="1px" borderColor="gray.700">
         <Container maxW="container.xl">
           <Text textAlign="center" color="gray.500" fontSize="sm">
-            Powered by Dee Studio • Stable Diffusion XL
+            Powered by Dee Studio • Image & Text Generation
           </Text>
         </Container>
       </Box>

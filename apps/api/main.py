@@ -7,7 +7,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 import os
 
-from apps.api.routes import sdxl, flux, health, models
+from apps.api.routes import sdxl, flux, health, models, text_generation
 
 # Create output directory for saved images
 OUTPUT_DIR = "outputs/images"
@@ -49,6 +49,7 @@ app.include_router(health.router, prefix="/api", tags=["Health"])
 app.include_router(models.router, prefix="/api/models", tags=["Models"])
 app.include_router(sdxl.router, prefix="/api/sdxl", tags=["SDXL"])
 app.include_router(flux.router, prefix="/api/flux", tags=["FLUX"])
+app.include_router(text_generation.router, prefix="/api/text", tags=["Text Generation"])
 
 # Serve saved images as static files (must be before React mount)
 app.mount("/images", StaticFiles(directory=OUTPUT_DIR), name="images")
