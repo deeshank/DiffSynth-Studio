@@ -64,11 +64,18 @@ def get_text_model():
             
             # Load tokenizer and model
             tokenizer = AutoTokenizer.from_pretrained(model_path)
+            
+            # Set padding token if not set
+            if tokenizer.pad_token is None:
+                tokenizer.pad_token = tokenizer.eos_token
+            
             model = AutoModelForCausalLM.from_pretrained(
                 model_path,
-                torch_dtype=torch.float16,
-                device_map="auto",
-                low_cpu_mem_usage=True
+                dtype=torch.float16,
+                device_map="cuda",
+                low_cpu_mem_usage=True,
+                trust_remote_code=True,
+                use_cache=True
             )
             
             _model_cache["text_model"] = model
@@ -101,13 +108,15 @@ async def generate_text(request: TextGenerateRequest):
         with torch.no_grad():
             outputs = model.generate(
                 **inputs,
-                max_length=request.max_length,
+                max_new_tokens=request.max_length,
                 temperature=request.temperature,
                 top_p=request.top_p,
                 top_k=request.top_k,
                 repetition_penalty=request.repetition_penalty,
                 do_sample=True,
-                pad_token_id=tokenizer.eos_token_id
+                pad_token_id=tokenizer.pad_token_id,
+                eos_token_id=tokenizer.eos_token_id,
+                use_cache=True
             )
         
         # Decode
@@ -153,14 +162,15 @@ async def chat(request: ChatRequest):
         with torch.no_grad():
             outputs = model.generate(
                 **inputs,
-                max_length=len(inputs.input_ids[0]) + request.max_length,
+                max_new_tokens=request.max_length,
                 temperature=request.temperature,
                 top_p=request.top_p,
                 top_k=request.top_k,
                 repetition_penalty=request.repetition_penalty,
                 do_sample=True,
-                pad_token_id=tokenizer.eos_token_id,
-                eos_token_id=tokenizer.eos_token_id
+                pad_token_id=tokenizer.pad_token_id,
+                eos_token_id=tokenizer.eos_token_id,
+                use_cache=True
             )
         
         # Decode
